@@ -1,5 +1,4 @@
-# AI-powered-browser-agent
-AI-powered browser automation platform that performs web tasks using natural language commands, intelligent workflows, and real-time browser control.
+
 # AI Browser Automation Platform
 
 An advanced AI-powered browser automation system that enables users to automate real-world web tasks using natural language instructions.
