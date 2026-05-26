@@ -3,12 +3,13 @@ import streamlit as st
 # ---------------- PAGE CONFIG ----------------
 
 st.set_page_config(
-    page_title="Fellou AI",
+    page_title="Fellou AI Browser",
     page_icon="🚀",
-    layout="wide"
+    layout="wide",
+    initial_sidebar_state="collapsed"
 )
 
-# ---------------- CSS ----------------
+# ---------------- CUSTOM CSS ----------------
 
 st.markdown("""
 <style>
@@ -23,7 +24,7 @@ html{
     scroll-behavior:smooth;
 }
 
-/* BACKGROUND FIX */
+/* BACKGROUND */
 
 .stApp{
 
@@ -62,7 +63,7 @@ background:transparent;
 background:transparent;
 }
 
-/* REMOVE STREAMLIT UI */
+/* REMOVE STREAMLIT */
 
 #MainMenu{
 visibility:hidden;
@@ -76,7 +77,7 @@ header{
 visibility:hidden;
 }
 
-/* 3D GRID */
+/* GRID */
 
 .grid-bg{
 position:fixed;
@@ -372,7 +373,7 @@ background:rgba(255,255,255,.05);
 transform:translateY(-6px);
 }
 
-/* AI ORB */
+/* ORB */
 
 .orb{
 
@@ -589,10 +590,140 @@ opacity:0;
 
 }
 
+/* SECTION TITLE */
+
+.section-title{
+
+font-size:58px;
+font-weight:900;
+
+text-align:center;
+
+margin-top:90px;
+margin-bottom:55px;
+
+color:white;
+}
+
+/* FEATURES */
+
+.feature-card{
+
+background:rgba(255,255,255,.05);
+
+border:1px solid rgba(255,255,255,.08);
+
+backdrop-filter:blur(16px);
+
+padding:35px;
+
+border-radius:28px;
+
+transition:.45s;
+
+transform-style:preserve-3d;
+}
+
+.feature-card:hover{
+
+transform:
+rotateX(8deg)
+rotateY(-8deg)
+translateY(-14px);
+
+box-shadow:
+0 0 50px rgba(99,102,241,.45);
+}
+
+.feature-card h3{
+
+font-size:28px;
+
+margin-bottom:18px;
+
+color:#60a5fa;
+}
+
+.feature-card p{
+
+line-height:1.9;
+
+color:#d1d5db;
+}
+
+/* TERMINAL */
+
+.terminal{
+
+background:#020617;
+
+border:1px solid rgba(255,255,255,.08);
+
+padding:35px;
+
+border-radius:24px;
+
+margin-top:60px;
+
+font-family:monospace;
+
+color:#4ade80;
+
+line-height:2;
+}
+
+/* STATS */
+
+.stat-box{
+background:rgba(255,255,255,.05);
+padding:35px;
+border-radius:22px;
+text-align:center;
+border:1px solid rgba(255,255,255,.08);
+}
+
+.stat-box h2{
+font-size:52px;
+color:#60a5fa;
+}
+
+.stat-box p{
+color:#d1d5db;
+}
+
+/* TESTIMONIAL */
+
+.testimonial{
+background:rgba(255,255,255,.04);
+border:1px solid rgba(255,255,255,.08);
+padding:35px;
+border-radius:24px;
+margin-bottom:25px;
+}
+
+.testimonial p{
+line-height:1.9;
+color:#d1d5db;
+}
+
+.testimonial h4{
+margin-top:18px;
+color:#60a5fa;
+}
+
+/* FOOTER */
+
+.footer{
+margin-top:120px;
+padding:60px;
+text-align:center;
+color:#9ca3af;
+}
+
 </style>
 """, unsafe_allow_html=True)
 
-# ---------------- BACKGROUND EFFECTS ----------------
+# ---------------- EFFECTS ----------------
 
 st.markdown("""
 <div class="grid-bg"></div>
@@ -666,16 +797,209 @@ Watch Live Demo
 </div>
 """, unsafe_allow_html=True)
 
-# ---------------- TERMINAL ----------------
+# ---------------- AI DEMO ----------------
+
+st.markdown("""
+<h2 class="section-title">
+🧠 AI Workflow Simulation
+</h2>
+""", unsafe_allow_html=True)
 
 st.markdown("""
 <div class="terminal">
 
-> Initializing AI agents...<br>
-> Searching 14 websites...<br>
-> Comparing market data...<br>
-> Executing browser actions...<br>
+> Initializing autonomous agents...<br>
+> Opening 14 research sources...<br>
+> Comparing multiple products...<br>
+> Analyzing market trends...<br>
+> Generating structured report...<br>
+> Executing browser workflows...<br>
 > Task completed successfully.
+
+</div>
+""", unsafe_allow_html=True)
+
+# ---------------- FEATURES ----------------
+
+st.markdown("""
+<h2 class="section-title">
+⚡ Next-Gen AI Features
+</h2>
+""", unsafe_allow_html=True)
+
+features = [
+
+("Autonomous Web Agents",
+"AI agents independently execute workflows across websites and apps."),
+
+("Multi-Tab Intelligence",
+"AI understands context across multiple tabs simultaneously."),
+
+("Deep Research Engine",
+"Conduct in-depth research from dozens of online sources automatically."),
+
+("AI Workspace Memory",
+"Adaptive memory system learns your workflow preferences over time."),
+
+("Real-Time Workflow Monitoring",
+"Watch every AI action step-by-step and intervene anytime."),
+
+("Voice Command Navigation",
+"Control browser workflows naturally using voice commands.")
+]
+
+for i in range(0, len(features), 3):
+
+    cols = st.columns(3)
+
+    for j in range(3):
+
+        if i+j < len(features):
+
+            with cols[j]:
+
+                st.markdown(f"""
+                <div class="feature-card">
+
+                <h3>{features[i+j][0]}</h3>
+
+                <p>{features[i+j][1]}</p>
+
+                </div>
+                """, unsafe_allow_html=True)
+
+# ---------------- STATS ----------------
+
+st.markdown("""
+<h2 class="section-title">
+📊 Trusted Worldwide
+</h2>
+""", unsafe_allow_html=True)
+
+stats = [
+("10M+","Tasks Automated"),
+("150+","AI Integrations"),
+("99.9%","Uptime"),
+("4.9★","User Rating")
+]
+
+cols = st.columns(4)
+
+for i, stat in enumerate(stats):
+
+    with cols[i]:
+
+        st.markdown(f"""
+        <div class="stat-box">
+
+        <h2>{stat[0]}</h2>
+
+        <p>{stat[1]}</p>
+
+        </div>
+        """, unsafe_allow_html=True)
+
+# ---------------- TESTIMONIALS ----------------
+
+st.markdown("""
+<h2 class="section-title">
+💬 Stories That Inspire
+</h2>
+""", unsafe_allow_html=True)
+
+testimonials = [
+
+("“This feels like Jarvis for the internet.”","— MARLON"),
+
+("“The most futuristic browser experience I've ever seen.”","— Guri Saroy"),
+
+("“Deep research and automation are insanely powerful.”","— Felipe")
+]
+
+for t in testimonials:
+
+    st.markdown(f"""
+    <div class="testimonial">
+
+    <p>{t[0]}</p>
+
+    <h4>{t[1]}</h4>
+
+    </div>
+    """, unsafe_allow_html=True)
+
+# ---------------- FAQ ----------------
+
+st.markdown("""
+<h2 class="section-title">
+❓ Frequently Asked Questions
+</h2>
+""", unsafe_allow_html=True)
+
+faq = {
+
+"Can AI automate apps and websites?":
+"Yes. Fellou AI autonomously executes workflows across websites and desktop apps.",
+
+"Can I monitor AI actions in real-time?":
+"Yes. Every AI step is visible and controllable.",
+
+"Does it support deep research?":
+"Yes. The AI analyzes information from multiple sources simultaneously.",
+
+"Does it work with local files?":
+"Absolutely. AI can manage and operate local desktop files."
+}
+
+for q, a in faq.items():
+
+    with st.expander(q):
+        st.write(a)
+
+# ---------------- MISSION ----------------
+
+st.markdown("""
+<h2 class="section-title">
+🚀 Our Mission
+</h2>
+
+<div class="feature-card" style="text-align:center;">
+
+<h3>
+Empowering Humanity with Intelligent Productivity
+</h3>
+
+<p>
+Building the world's most advanced autonomous AI browsing platform.
+</p>
+
+</div>
+""", unsafe_allow_html=True)
+
+# ---------------- FOOTER ----------------
+
+st.markdown("""
+<div class="footer">
+
+<h2 style="color:white;">
+🚀 Fellou AI Browser
+</h2>
+
+<p>
+AI-native autonomous browsing platform
+</p>
+
+<br>
+
+<p>
+Features • Research • Docs • API • Contact • Github
+</p>
+
+<br>
+
+<p>
+© 2026 Fellou AI. All rights reserved.
+</p>
 
 </div>
 """, unsafe_allow_html=True)
