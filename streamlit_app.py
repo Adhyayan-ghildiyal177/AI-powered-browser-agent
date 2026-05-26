@@ -26,8 +26,41 @@ html{
     scroll-behavior:smooth;
 }
 
-body{
+.stApp{
+
 background:
+
+radial-gradient(circle at top left,
+rgba(139,92,246,0.25),
+transparent 25%),
+
+radial-gradient(circle at top right,
+rgba(59,130,246,0.22),
+transparent 30%),
+
+radial-gradient(circle at bottom,
+rgba(6,182,212,0.18),
+transparent 30%),
+
+linear-gradient(
+135deg,
+#020617 0%,
+#000000 35%,
+#050816 65%,
+#0f172a 100%
+);
+
+background-attachment:fixed;
+
+color:white;
+}
+[data-testid="stAppViewContainer"]{
+background:transparent;
+}
+
+.main{
+background:transparent;
+}
 radial-gradient(circle at top left,#312e81,#0f172a 35%,#020617 70%);
 overflow-x:hidden;
 color:white;
