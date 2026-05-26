@@ -1,14 +1,11 @@
 import streamlit as st
-from streamlit.components.v1 import html
-import time
 
 # ---------------- PAGE CONFIG ----------------
 
 st.set_page_config(
-    page_title="Fellou AI Browser",
+    page_title="Fellou AI",
     page_icon="🚀",
-    layout="wide",
-    initial_sidebar_state="collapsed"
+    layout="wide"
 )
 
 # ---------------- CUSTOM CSS ----------------
@@ -19,88 +16,202 @@ st.markdown("""
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700;800;900&display=swap');
 
 *{
-    font-family: 'Inter', sans-serif;
+    font-family:'Inter',sans-serif;
 }
 
 html{
     scroll-behavior:smooth;
 }
 
+/* MAIN BACKGROUND */
+
 body{
+
 background:
-radial-gradient(circle at top left,#312e81,#0f172a 35%,#020617 70%);
+
+radial-gradient(circle at top left,
+rgba(139,92,246,0.25),
+transparent 25%),
+
+radial-gradient(circle at top right,
+rgba(59,130,246,0.22),
+transparent 30%),
+
+radial-gradient(circle at bottom,
+rgba(6,182,212,0.18),
+transparent 30%),
+
+linear-gradient(
+135deg,
+#020617 0%,
+#000000 35%,
+#050816 65%,
+#0f172a 100%
+);
+
+background-attachment:fixed;
+
 overflow-x:hidden;
 color:white;
 }
-
-/* REMOVE STREAMLIT STYLING */
-
-#MainMenu {visibility:hidden;}
-footer {visibility:hidden;}
-header {visibility:hidden;}
 
 .main{
     background:transparent;
 }
 
-/* ANIMATED BACKGROUND */
+/* REMOVE STREAMLIT DEFAULTS */
+
+#MainMenu{
+visibility:hidden;
+}
+
+footer{
+visibility:hidden;
+}
+
+header{
+visibility:hidden;
+}
+
+/* 3D GRID BACKGROUND */
+
+.grid-bg{
+position:fixed;
+width:100%;
+height:100%;
+
+background-image:
+linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+
+background-size:50px 50px;
+
+transform:
+perspective(1000px)
+rotateX(75deg)
+scale(2);
+
+transform-origin:top;
+
+opacity:.18;
+
+z-index:-3;
+
+animation:gridmove 18s linear infinite;
+}
+
+@keyframes gridmove{
+
+0%{
+transform:
+perspective(1000px)
+rotateX(75deg)
+translateY(0)
+scale(2);
+}
+
+100%{
+transform:
+perspective(1000px)
+rotateX(75deg)
+translateY(50px)
+scale(2);
+}
+
+}
+
+/* GLOW EFFECTS */
 
 .glow{
 position:fixed;
-width:700px;
-height:700px;
-background:radial-gradient(circle,
-rgba(59,130,246,.18),
+width:800px;
+height:800px;
+
+background:
+radial-gradient(circle,
+rgba(168,85,247,.22),
 transparent 70%);
 
-filter:blur(120px);
+filter:blur(140px);
+
 z-index:-1;
-animation: float 10s ease infinite;
-top:-150px;
-left:-150px;
+
+top:-250px;
+left:-200px;
+
+animation: float 12s ease infinite;
 }
 
 .glow2{
 position:fixed;
-width:600px;
-height:600px;
-background:radial-gradient(circle,
-rgba(168,85,247,.15),
+width:700px;
+height:700px;
+
+background:
+radial-gradient(circle,
+rgba(59,130,246,.18),
 transparent 70%);
 
-filter:blur(120px);
+filter:blur(140px);
+
 z-index:-1;
-bottom:-150px;
-right:-150px;
-animation: float2 12s ease infinite;
+
+bottom:-250px;
+right:-200px;
+
+animation: float2 14s ease infinite;
 }
 
 @keyframes float{
-0%{transform:translate(0,0);}
-50%{transform:translate(120px,70px);}
-100%{transform:translate(0,0);}
+
+0%{
+transform:translate(0,0);
+}
+
+50%{
+transform:translate(120px,80px);
+}
+
+100%{
+transform:translate(0,0);
+}
+
 }
 
 @keyframes float2{
-0%{transform:translate(0,0);}
-50%{transform:translate(-100px,-80px);}
-100%{transform:translate(0,0);}
+
+0%{
+transform:translate(0,0);
+}
+
+50%{
+transform:translate(-100px,-60px);
+}
+
+100%{
+transform:translate(0,0);
+}
+
 }
 
 /* NAVBAR */
 
 .navbar{
+
 position:sticky;
 top:0;
+
 z-index:999;
 
 backdrop-filter:blur(18px);
+
 background:rgba(255,255,255,0.04);
 
 border:1px solid rgba(255,255,255,.08);
 
 padding:18px 40px;
-border-radius:20px;
+
+border-radius:22px;
 
 margin-bottom:40px;
 }
@@ -112,10 +223,18 @@ align-items:center;
 }
 
 .logo{
+
 font-size:32px;
 font-weight:900;
 
-background:linear-gradient(90deg,#60a5fa,#a855f7);
+background:
+linear-gradient(
+90deg,
+#60a5fa,
+#a855f7,
+#06b6d4
+);
+
 -webkit-background-clip:text;
 -webkit-text-fill-color:transparent;
 }
@@ -126,9 +245,13 @@ gap:30px;
 }
 
 .nav-links a{
+
 text-decoration:none;
+
 color:#d1d5db;
+
 transition:.3s;
+
 font-weight:500;
 }
 
@@ -139,128 +262,177 @@ color:#60a5fa;
 /* HERO */
 
 .hero{
-padding-top:100px;
-padding-bottom:130px;
+
+padding-top:120px;
+padding-bottom:120px;
+
 text-align:center;
-position:relative;
 }
 
 .hero h1{
+
 font-size:90px;
 font-weight:900;
+
 line-height:1.05;
 
-background:linear-gradient(
+background:
+linear-gradient(
 90deg,
 #60a5fa,
-#818cf8,
 #a855f7,
-#38bdf8
+#06b6d4
 );
 
 -webkit-background-clip:text;
 -webkit-text-fill-color:transparent;
 
-margin-bottom:30px;
+margin-bottom:28px;
 }
 
 .hero p{
+
 font-size:24px;
-color:#b3b8d0;
 
 max-width:950px;
+
 margin:auto;
 
 line-height:1.9;
+
+color:#b8c1d9;
 }
 
+/* BUTTONS */
+
 .hero-buttons{
+
 margin-top:50px;
 
 display:flex;
 justify-content:center;
-gap:25px;
+
+gap:22px;
+
 flex-wrap:wrap;
 }
 
 .primary-btn{
-background:linear-gradient(
+
+background:
+linear-gradient(
 135deg,
 #2563eb,
-#7c3aed
+#a855f7
 );
 
-padding:18px 40px;
+padding:18px 42px;
 
-border-radius:16px;
+border-radius:18px;
 
 font-weight:700;
-color:white;
 
 text-decoration:none;
+
+color:white;
 
 transition:.4s;
 }
 
 .primary-btn:hover{
+
 transform:translateY(-8px);
-box-shadow:0 0 40px rgba(99,102,241,.6);
+
+box-shadow:
+0 0 50px rgba(99,102,241,.6);
 }
 
 .secondary-btn{
+
 border:1px solid rgba(255,255,255,.1);
 
-padding:18px 40px;
+padding:18px 42px;
 
-border-radius:16px;
+border-radius:18px;
 
 text-decoration:none;
+
 color:white;
 
 transition:.4s;
 }
 
 .secondary-btn:hover{
+
 background:rgba(255,255,255,.05);
+
 transform:translateY(-6px);
 }
 
-/* AI ORB */
+/* 3D AI ORB */
 
 .orb{
-width:320px;
-height:320px;
 
-margin:70px auto;
+width:340px;
+height:340px;
+
+margin:80px auto;
 
 border-radius:50%;
 
 background:
 radial-gradient(circle at top,
 #60a5fa,
-#7c3aed,
-#111827);
+#a855f7,
+#020617);
 
 box-shadow:
 0 0 120px rgba(99,102,241,.5);
 
-animation: spin 14s linear infinite;
+animation:
+spin 14s linear infinite,
+pulse 5s ease infinite;
 }
 
 @keyframes spin{
-0%{transform:rotate(0deg);}
-100%{transform:rotate(360deg);}
+
+0%{
+transform:rotate(0deg);
 }
 
-/* SECTION */
+100%{
+transform:rotate(360deg);
+}
+
+}
+
+@keyframes pulse{
+
+0%{
+box-shadow:0 0 80px rgba(99,102,241,.4);
+}
+
+50%{
+box-shadow:0 0 150px rgba(168,85,247,.7);
+}
+
+100%{
+box-shadow:0 0 80px rgba(99,102,241,.4);
+}
+
+}
+
+/* SECTION TITLES */
 
 .section-title{
+
 font-size:58px;
 font-weight:900;
+
 text-align:center;
 
 margin-top:90px;
-margin-bottom:50px;
+margin-bottom:55px;
 
 color:white;
 }
@@ -268,6 +440,7 @@ color:white;
 /* FEATURES */
 
 .feature-grid{
+
 display:grid;
 
 grid-template-columns:
@@ -282,7 +455,7 @@ background:rgba(255,255,255,.05);
 
 border:1px solid rgba(255,255,255,.08);
 
-backdrop-filter:blur(15px);
+backdrop-filter:blur(16px);
 
 padding:35px;
 
@@ -305,19 +478,25 @@ box-shadow:
 }
 
 .feature-card h3{
+
 font-size:28px;
+
 margin-bottom:18px;
+
 color:#60a5fa;
 }
 
 .feature-card p{
-color:#d1d5db;
+
 line-height:1.9;
+
+color:#d1d5db;
 }
 
 /* TERMINAL */
 
 .terminal{
+
 background:#020617;
 
 border:1px solid rgba(255,255,255,.08);
@@ -335,67 +514,10 @@ color:#4ade80;
 line-height:2;
 }
 
-/* STATS */
-
-.stats{
-display:grid;
-
-grid-template-columns:
-repeat(auto-fit,minmax(200px,1fr));
-
-gap:25px;
-
-margin-top:70px;
-}
-
-.stat-box{
-background:rgba(255,255,255,.05);
-
-padding:35px;
-
-border-radius:22px;
-
-text-align:center;
-
-border:1px solid rgba(255,255,255,.08);
-}
-
-.stat-box h2{
-font-size:52px;
-color:#60a5fa;
-}
-
-.stat-box p{
-color:#d1d5db;
-}
-
-/* TESTIMONIALS */
-
-.testimonial{
-background:rgba(255,255,255,.04);
-
-border:1px solid rgba(255,255,255,.08);
-
-padding:35px;
-
-border-radius:24px;
-
-margin-bottom:25px;
-}
-
-.testimonial p{
-line-height:1.9;
-color:#d1d5db;
-}
-
-.testimonial h4{
-margin-top:18px;
-color:#60a5fa;
-}
-
 /* FOOTER */
 
 .footer{
+
 margin-top:120px;
 
 padding:60px;
@@ -410,7 +532,7 @@ color:#9ca3af;
 @media(max-width:768px){
 
 .hero h1{
-font-size:52px;
+font-size:54px;
 }
 
 .hero p{
@@ -430,9 +552,10 @@ display:none;
 </style>
 """, unsafe_allow_html=True)
 
-# ---------------- GLOW EFFECTS ----------------
+# ---------------- BACKGROUND EFFECTS ----------------
 
 st.markdown("""
+<div class="grid-bg"></div>
 <div class="glow"></div>
 <div class="glow2"></div>
 """, unsafe_allow_html=True)
@@ -444,11 +567,12 @@ st.markdown("""
 
 <div class="nav-flex">
 
-<div class="logo">🚀 Fellou AI</div>
+<div class="logo">
+🚀 Fellou AI
+</div>
 
 <div class="nav-links">
 <a href="#">Features</a>
-<a href="#">AI Demo</a>
 <a href="#">Research</a>
 <a href="#">Pricing</a>
 <a href="#">Docs</a>
@@ -470,9 +594,9 @@ The Future of Autonomous Browsing
 </h1>
 
 <p>
-An AI-native browser that researches, automates,
-reasons across tabs, controls workflows,
-and executes tasks like a digital operating system.
+An AI-native browser that researches, automates workflows,
+controls apps, reasons across tabs,
+and executes complex tasks autonomously.
 </p>
 
 <div class="hero-buttons">
@@ -492,7 +616,7 @@ Watch Live Demo
 </div>
 """, unsafe_allow_html=True)
 
-# ---------------- AI DEMO ----------------
+# ---------------- TERMINAL ----------------
 
 st.markdown("""
 <h2 class="section-title">
@@ -503,12 +627,12 @@ st.markdown("""
 st.markdown("""
 <div class="terminal">
 
-> Initializing autonomous agents...<br>
-> Opening 14 research sources...<br>
-> Comparing multiple products...<br>
-> Analyzing market trends...<br>
+> Initializing AI agents...<br>
+> Searching 14 websites...<br>
+> Comparing market data...<br>
+> Opening autonomous workflows...<br>
+> Executing browser actions...<br>
 > Generating structured report...<br>
-> Executing browser workflows...<br>
 > Task completed successfully.
 </div>
 """, unsafe_allow_html=True)
@@ -517,47 +641,29 @@ st.markdown("""
 
 st.markdown("""
 <h2 class="section-title">
-⚡ Next-Gen AI Features
+⚡ Next-Generation Features
 </h2>
 """, unsafe_allow_html=True)
 
 features = [
 
 ("Autonomous Web Agents",
-"AI agents independently execute workflows across websites and apps."),
-
-("Multi-Tab Intelligence",
-"AI understands context across multiple tabs simultaneously."),
+"AI agents independently perform browser workflows."),
 
 ("Deep Research Engine",
-"Conduct in-depth research from dozens of online sources automatically."),
+"Conduct multi-source internet research automatically."),
+
+("Multi-Tab Intelligence",
+"AI reasons across multiple tabs simultaneously."),
 
 ("AI Workspace Memory",
-"Adaptive memory system learns your workflow preferences over time."),
-
-("Real-Time Workflow Monitoring",
-"Watch every AI action step-by-step and intervene anytime."),
+"Adaptive memory system learns your habits over time."),
 
 ("Voice Command Navigation",
-"Control browser workflows naturally using voice commands."),
+"Control workflows naturally using voice commands."),
 
-("Cross-App Automation",
-"Automate actions across apps, websites, and desktop systems."),
-
-("AI Copilot Overlay",
-"Instant contextual AI assistant across every webpage."),
-
-("Privacy & Security Layer",
-"Human approval system with encrypted memory architecture."),
-
-("Dynamic Task Scheduling",
-"Run autonomous tasks in the future automatically."),
-
-("Contextual AI Actions",
-"AI predicts your next actions intelligently."),
-
-("AI File System",
-"Manage desktop files directly through natural language.")
+("Real-Time AI Monitoring",
+"Watch every AI action step-by-step live.")
 ]
 
 for i in range(0, len(features), 3):
@@ -566,7 +672,7 @@ for i in range(0, len(features), 3):
 
     for j in range(3):
 
-        if i + j < len(features):
+        if i+j < len(features):
 
             with cols[j]:
 
@@ -580,117 +686,6 @@ for i in range(0, len(features), 3):
                 </div>
                 """, unsafe_allow_html=True)
 
-# ---------------- STATS ----------------
-
-st.markdown("""
-<h2 class="section-title">
-📊 Trusted Worldwide
-</h2>
-""", unsafe_allow_html=True)
-
-stats = [
-("10M+","Tasks Automated"),
-("150+","AI Integrations"),
-("99.9%","Uptime"),
-("4.9★","User Rating")
-]
-
-cols = st.columns(4)
-
-for i, stat in enumerate(stats):
-
-    with cols[i]:
-
-        st.markdown(f"""
-        <div class="stat-box">
-
-        <h2>{stat[0]}</h2>
-
-        <p>{stat[1]}</p>
-
-        </div>
-        """, unsafe_allow_html=True)
-
-# ---------------- TESTIMONIALS ----------------
-
-st.markdown("""
-<h2 class="section-title">
-💬 Stories That Inspire
-</h2>
-""", unsafe_allow_html=True)
-
-testimonials = [
-
-("“This feels like Jarvis for the internet.”","— MARLON"),
-
-("“The most futuristic browser experience I've ever seen.”","— Guri Saroy"),
-
-("“Deep research and automation are insanely powerful.”","— Felipe")
-]
-
-for t in testimonials:
-
-    st.markdown(f"""
-    <div class="testimonial">
-
-    <p>{t[0]}</p>
-
-    <h4>{t[1]}</h4>
-
-    </div>
-    """, unsafe_allow_html=True)
-
-# ---------------- FAQ ----------------
-
-st.markdown("""
-<h2 class="section-title">
-❓ Frequently Asked Questions
-</h2>
-""", unsafe_allow_html=True)
-
-faq = {
-
-"Can AI automate apps and websites?":
-"Yes. Fellou AI autonomously executes workflows across websites and desktop apps.",
-
-"Can I monitor AI actions in real-time?":
-"Yes. Every AI step is visible and controllable.",
-
-"Does it support deep research?":
-"Yes. The AI analyzes information from multiple sources simultaneously.",
-
-"Does it work with local files?":
-"Absolutely. AI can manage and operate local desktop files.",
-
-"Can tasks run automatically later?":
-"Yes. You can schedule workflows and autonomous tasks."
-}
-
-for q, a in faq.items():
-
-    with st.expander(q):
-        st.write(a)
-
-# ---------------- MISSION ----------------
-
-st.markdown("""
-<h2 class="section-title">
-🚀 Our Mission
-</h2>
-
-<div class="feature-card" style="text-align:center;">
-
-<h3>
-Empowering Humanity with Intelligent Productivity
-</h3>
-
-<p>
-Building the world's most advanced autonomous AI browsing platform.
-</p>
-
-</div>
-""", unsafe_allow_html=True)
-
 # ---------------- FOOTER ----------------
 
 st.markdown("""
@@ -701,19 +696,19 @@ st.markdown("""
 </h2>
 
 <p>
-AI-native autonomous browsing platform
+The next generation AI-native autonomous browser.
 </p>
 
 <br>
 
 <p>
-Features • Research • Docs • API • Contact • Github
+Features • Research • Docs • Github • API
 </p>
 
 <br>
 
 <p>
-© 2026 Fellou AI. All rights reserved.
+© 2026 Fellou AI
 </p>
 
 </div>
