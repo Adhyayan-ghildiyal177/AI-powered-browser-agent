@@ -412,16 +412,6 @@ transform:rotate(-360deg);
 st.markdown("""
 
 
-
-<div class="particle"></div>
-<div class="particle"></div>
-<div class="particle"></div>
-<div class="particle"></div>
-<div class="particle"></div>
-
-</div>
-
-""", unsafe_allow_html=True)
 .particles{
 
 position:relative;
