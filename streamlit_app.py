@@ -411,7 +411,7 @@ transform:rotate(-360deg);
 }
 st.markdown("""
 
-<div class="particles">
+
 
 <div class="particle"></div>
 <div class="particle"></div>
