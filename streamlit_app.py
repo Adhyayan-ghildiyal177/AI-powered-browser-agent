@@ -1,210 +1,451 @@
 import streamlit as st
+from streamlit.components.v1 import html
 
-# ── Page config ──────────────────────────────────────────────
+# ---------------- PAGE CONFIG ----------------
 st.set_page_config(
-    page_title="Fellou AI Browser",
-    page_icon="🌐",
-    layout="wide",
+    page_title="Fellou AI",
+    page_icon="🚀",
+    layout="wide"
 )
 
-# ── Custom CSS ────────────────────────────────────────────────
+# ---------------- CUSTOM CSS ----------------
 st.markdown("""
 <style>
-    body { background-color: #0d0d0d; }
-    .main { background-color: #0d0d0d; }
 
-    h1 { color: #ffffff; font-size: 2.5rem; }
-    h2 { color: #c084fc; }
-    h3 { color: #e2e8f0; }
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700;800&display=swap');
 
-    .hero-box {
-        background: linear-gradient(135deg, #1e1b4b, #0f172a);
-        border: 1px solid #4f46e5;
-        border-radius: 16px;
-        padding: 2rem;
-        text-align: center;
-        margin-bottom: 2rem;
-    }
-    .hero-box h1 { font-size: 2.8rem; color: #ffffff; }
-    .hero-box p  { color: #94a3b8; font-size: 1.1rem; }
+*{
+    font-family: 'Inter', sans-serif;
+}
 
-    .feature-card {
-        background: #1e293b;
-        border-left: 4px solid #7c3aed;
-        border-radius: 12px;
-        padding: 1.2rem 1.5rem;
-        margin-bottom: 1rem;
-    }
-    .feature-card h4 { color: #a78bfa; margin: 0 0 0.4rem; }
-    .feature-card p  { color: #cbd5e1; margin: 0; font-size: 0.95rem; }
+html{
+    scroll-behavior:smooth;
+}
 
-    .testimonial-card {
-        background: #1e293b;
-        border-radius: 12px;
-        padding: 1.2rem 1.5rem;
-        margin-bottom: 1rem;
-        border: 1px solid #334155;
-    }
-    .testimonial-card .quote { color: #e2e8f0; font-style: italic; }
-    .testimonial-card .author { color: #7c3aed; font-weight: bold; margin-top: 0.5rem; }
+body{
+    background: linear-gradient(135deg,#050816,#0b1026,#111827);
+    color:white;
+}
 
-    .use-case-badge {
-        display: inline-block;
-        background: #312e81;
-        color: #c4b5fd;
-        border-radius: 20px;
-        padding: 0.3rem 1rem;
-        margin: 0.3rem;
-        font-size: 0.9rem;
-    }
+.main{
+    background: transparent;
+}
 
-    .diff-card {
-        background: #0f172a;
-        border: 1px solid #4f46e5;
-        border-radius: 10px;
-        padding: 1rem 1.2rem;
-        margin-bottom: 0.8rem;
-    }
-    .diff-card strong { color: #a78bfa; }
-    .diff-card span   { color: #94a3b8; }
+/* NAVBAR */
 
-    .mission-box {
-        background: linear-gradient(135deg, #312e81, #1e1b4b);
-        border-radius: 16px;
-        padding: 2rem;
-        text-align: center;
-        color: #e2e8f0;
-        font-size: 1.2rem;
-        margin: 2rem 0;
-    }
+.navbar{
+    position: sticky;
+    top: 0;
+    z-index:999;
+    backdrop-filter: blur(10px);
+    background: rgba(10,10,20,0.6);
+    border:1px solid rgba(255,255,255,0.08);
+    padding:18px 30px;
+    border-radius:20px;
+    margin-bottom:40px;
+}
+
+.nav-flex{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+}
+
+.logo{
+    font-size:28px;
+    font-weight:800;
+    color:#60a5fa;
+}
+
+.nav-links{
+    display:flex;
+    gap:30px;
+}
+
+.nav-links a{
+    color:white;
+    text-decoration:none;
+    transition:0.3s;
+}
+
+.nav-links a:hover{
+    color:#60a5fa;
+}
+
+/* HERO SECTION */
+
+.hero{
+    padding-top:80px;
+    padding-bottom:100px;
+    text-align:center;
+}
+
+.hero h1{
+    font-size:72px;
+    font-weight:800;
+    line-height:1.1;
+    margin-bottom:25px;
+
+    background: linear-gradient(90deg,#60a5fa,#818cf8,#c084fc);
+    -webkit-background-clip:text;
+    -webkit-text-fill-color:transparent;
+}
+
+.hero p{
+    font-size:22px;
+    color:#b3b8d0;
+    max-width:900px;
+    margin:auto;
+    line-height:1.8;
+}
+
+.hero-buttons{
+    margin-top:40px;
+    display:flex;
+    justify-content:center;
+    gap:20px;
+    flex-wrap:wrap;
+}
+
+.primary-btn{
+    background:linear-gradient(135deg,#2563eb,#7c3aed);
+    padding:15px 35px;
+    border-radius:14px;
+    color:white;
+    font-weight:700;
+    text-decoration:none;
+    transition:0.3s;
+}
+
+.primary-btn:hover{
+    transform:translateY(-5px);
+    box-shadow:0 0 35px rgba(99,102,241,.6);
+}
+
+.secondary-btn{
+    border:1px solid rgba(255,255,255,.15);
+    padding:15px 35px;
+    border-radius:14px;
+    color:white;
+    text-decoration:none;
+    transition:0.3s;
+}
+
+.secondary-btn:hover{
+    background:rgba(255,255,255,.05);
+}
+
+/* FEATURE SECTION */
+
+.section-title{
+    font-size:48px;
+    font-weight:800;
+    margin-top:70px;
+    margin-bottom:40px;
+    text-align:center;
+}
+
+.feature-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(320px,1fr));
+    gap:25px;
+}
+
+.feature-card{
+    background:rgba(255,255,255,0.05);
+    border:1px solid rgba(255,255,255,0.08);
+    backdrop-filter:blur(12px);
+
+    padding:30px;
+    border-radius:24px;
+
+    transition:0.4s;
+}
+
+.feature-card:hover{
+    transform:translateY(-10px);
+    box-shadow:0 0 35px rgba(59,130,246,.35);
+}
+
+.feature-card h3{
+    color:#60a5fa;
+    font-size:26px;
+    margin-bottom:15px;
+}
+
+.feature-card p{
+    color:#c7c9d3;
+    line-height:1.8;
+}
+
+/* STATS */
+
+.stats{
+    margin-top:90px;
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+    gap:20px;
+}
+
+.stat-box{
+    background:rgba(255,255,255,0.04);
+    border-radius:20px;
+    padding:35px;
+    text-align:center;
+}
+
+.stat-box h2{
+    font-size:50px;
+    color:#60a5fa;
+}
+
+.stat-box p{
+    color:#d1d5db;
+}
+
+/* TESTIMONIALS */
+
+.testimonial{
+    background:rgba(255,255,255,.04);
+    border:1px solid rgba(255,255,255,.08);
+    padding:30px;
+    border-radius:22px;
+    margin-bottom:25px;
+}
+
+.testimonial p{
+    color:#d1d5db;
+    line-height:1.8;
+}
+
+.testimonial h4{
+    margin-top:15px;
+    color:#60a5fa;
+}
+
+/* FAQ */
+
+.faq{
+    background:rgba(255,255,255,.04);
+    border-radius:18px;
+    padding:18px;
+    margin-bottom:15px;
+    border:1px solid rgba(255,255,255,.08);
+}
+
+/* FOOTER */
+
+.footer{
+    margin-top:100px;
+    padding:50px;
+    text-align:center;
+    color:#9ca3af;
+}
+
+/* GLOW */
+
+.glow{
+    position:fixed;
+    width:500px;
+    height:500px;
+    background:radial-gradient(circle,#2563eb55,transparent 70%);
+    top:-100px;
+    left:-100px;
+    z-index:-1;
+    filter:blur(80px);
+}
+
+/* RESPONSIVE */
+
+@media(max-width:768px){
+
+.hero h1{
+    font-size:48px;
+}
+
+.hero p{
+    font-size:18px;
+}
+
+.section-title{
+    font-size:38px;
+}
+
+}
+
 </style>
 """, unsafe_allow_html=True)
 
-# ── Data ──────────────────────────────────────────────────────
-fellou_info = {
-    "name": "Fellou",
-    "tagline": "The World's First Agentic Browser",
-    "description": (
-        "Fellou is an AI-powered browser that goes beyond browsing by taking "
-        "automated web actions. It executes complex cross-app workflows through "
-        "natural language descriptions."
-    ),
-    "contact": "hi@fellou.ai",
-    "website": "https://fellou.ai",
-    "key_features": [
-        {"title": "Automated Complex Web Tasks with One Prompt",
-         "detail": "Automatically execute cross-app workflows through natural language descriptions."},
-        {"title": "End-To-End Web Automation",
-         "detail": "From complex data scraping to form filling, handles every step from a single command."},
-        {"title": "Handles Desktop Files, Zero Effort",
-         "detail": "Computer Use transforms Fellou into a true system-level agent to operate local apps and manage files."},
-        {"title": "Intervene at Any Step in Real Time",
-         "detail": "Fellou shows its entire plan step by step. Edit, approve, or step in at any moment."},
-        {"title": "Agentic Memory Learns You",
-         "detail": "Securely learns from your browser history and notes to instantly recall past information."},
-        {"title": "Multi-Source Research Reports",
-         "detail": "Automates deep research across the entire internet including logged-in accounts like Reddit."},
-    ],
-    "use_cases": ["Data Analytics", "Career Growth", "Study", "Marketing", "Daily Life", "Productivity"],
-    "differences": {
-        "Deep Action": "Independently plans and executes complex web and desktop tasks across multiple apps.",
-        "Deep Search": "Automates in-depth research across the internet including logged-in accounts on X, Reddit, or Salesforce.",
-        "Dynamic Multitasking": "Runs multiple tasks simultaneously in its back-end workspace while you browse.",
-        "Agentic Memory": "Offers proactive, personalized help by connecting browser history and chat context.",
-    },
-    "testimonials": [
-        {"quote": "Fellou didn't just beat the competition, it crushed them. Most accurate, clearest reports, deepest insights. 3.1x faster than OpenAI.",
-         "user": "Guri Saroy", "handle": "@HeyGurisaroy"},
-        {"quote": "Chrome was for browsing. Fellou is for doing it. The future is not the search, it is an exploration of action.",
-         "user": "Filipe | IA", "handle": "@filicroval"},
-        {"quote": "This is the future of web browsing.",
-         "user": "MARLON", "handle": "@MarlonNFTs"},
-    ],
-    "faq": [
-        "Can AI browsers do more than just summarize pages and organize tabs?",
-        "Can AI automate my work across different apps and websites?",
-        "Does it work on sites that require a login or CAPTCHA?",
-        "Can I see and control exactly what the AI agent is doing?",
-        "What can AI Browser create other than answering questions by text?",
-        "Can I schedule tasks to run automatically in the future?",
-        "Can I build my own custom AI agents and workflows?",
-    ],
-    "mission": "Bring a digital companion to every person, on every device. Empowering humanity with intelligent productivity.",
-}
+# ---------------- GLOW EFFECT ----------------
+st.markdown('<div class="glow"></div>', unsafe_allow_html=True)
 
-# ── HERO ──────────────────────────────────────────────────────
-st.markdown(f"""
-<div class="hero-box">
-    <h1>🌐 {fellou_info['name']}</h1>
-    <h3 style="color:#a78bfa;">{fellou_info['tagline']}</h3>
-    <p>{fellou_info['description']}</p>
-    <p style="margin-top:1rem;">
-        🔗 <a href="{fellou_info['website']}" target="_blank" style="color:#7c3aed;">{fellou_info['website']}</a>
-        &nbsp;|&nbsp; 📧 {fellou_info['contact']}
-    </p>
+# ---------------- NAVBAR ----------------
+st.markdown("""
+<div class="navbar">
+    <div class="nav-flex">
+        <div class="logo">🚀 Fellou AI</div>
+
+        <div class="nav-links">
+            <a href="#">Features</a>
+            <a href="#">Pricing</a>
+            <a href="#">Docs</a>
+            <a href="#">Github</a>
+        </div>
+    </div>
 </div>
 """, unsafe_allow_html=True)
 
-# ── KEY FEATURES ──────────────────────────────────────────────
-st.markdown("## ⚡ Key Features")
-col1, col2 = st.columns(2)
-for i, feature in enumerate(fellou_info["key_features"]):
-    target = col1 if i % 2 == 0 else col2
-    with target:
+# ---------------- HERO SECTION ----------------
+st.markdown("""
+<div class="hero">
+
+<h1>The Future of Autonomous Browsing</h1>
+
+<p>
+Automate workflows, research smarter, control apps,
+and execute web tasks with powerful AI agents.
+</p>
+
+<div class="hero-buttons">
+    <a class="primary-btn" href="#">Get Started</a>
+    <a class="secondary-btn" href="#">Watch Demo</a>
+</div>
+
+</div>
+""", unsafe_allow_html=True)
+
+# ---------------- FEATURES ----------------
+st.markdown("""
+<h2 class="section-title">⚡ Key Features</h2>
+""", unsafe_allow_html=True)
+
+features = [
+    ("Automated Workflows",
+     "Execute complex web tasks with one prompt."),
+
+    ("AI Research",
+     "Perform multi-source deep research across the web."),
+
+    ("Desktop Control",
+     "Manage local apps and files with AI automation."),
+
+    ("Real-Time Monitoring",
+     "Watch and control every AI action step-by-step."),
+
+    ("Memory System",
+     "AI learns your workflow preferences over time."),
+
+    ("Dynamic Multitasking",
+     "Run multiple autonomous tasks simultaneously.")
+]
+
+cols = st.columns(3)
+
+for i, feature in enumerate(features):
+    with cols[i % 3]:
         st.markdown(f"""
         <div class="feature-card">
-            <h4>{feature['title']}</h4>
-            <p>{feature['detail']}</p>
+            <h3>{feature[0]}</h3>
+            <p>{feature[1]}</p>
         </div>
         """, unsafe_allow_html=True)
 
-# ── USE CASES ─────────────────────────────────────────────────
-st.markdown("## 🎯 Use Cases")
-badges = "".join(
-    f'<span class="use-case-badge">{uc}</span>'
-    for uc in fellou_info["use_cases"]
-)
-st.markdown(f"<div style='margin-bottom:1.5rem;'>{badges}</div>", unsafe_allow_html=True)
+# ---------------- STATS ----------------
+st.markdown("""
+<h2 class="section-title">📊 Trusted Worldwide</h2>
+""", unsafe_allow_html=True)
 
-# ── VS CHAT ASSISTANT ─────────────────────────────────────────
-st.markdown("## 🤖 Fellou vs Chat Assistant")
-st.info("An AI chat assistant is **reactive** — it only answers questions. Fellou's agentic AI **acts** — it runs tasks automatically and proactively helps you complete things you've forgotten.")
+stats_cols = st.columns(4)
 
-for key, val in fellou_info["differences"].items():
+stats = [
+    ("10M+", "Tasks Automated"),
+    ("99.9%", "Uptime"),
+    ("150+", "Integrations"),
+    ("4.9★", "User Rating")
+]
+
+for i, stat in enumerate(stats):
+    with stats_cols[i]:
+        st.markdown(f"""
+        <div class="stat-box">
+            <h2>{stat[0]}</h2>
+            <p>{stat[1]}</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+# ---------------- TESTIMONIALS ----------------
+st.markdown("""
+<h2 class="section-title">💬 Stories That Inspire</h2>
+""", unsafe_allow_html=True)
+
+testimonials = [
+    ("“This is the future of browsing.”",
+     "— MARLON"),
+
+    ("“Most accurate AI workflow system I’ve used.”",
+     "— Guri Saroy"),
+
+    ("“Feels like Jarvis for the internet.”",
+     "— Felipe")
+]
+
+for t in testimonials:
     st.markdown(f"""
-    <div class="diff-card">
-        <strong>{key}:</strong> <span>{val}</span>
+    <div class="testimonial">
+        <p>{t[0]}</p>
+        <h4>{t[1]}</h4>
     </div>
     """, unsafe_allow_html=True)
 
-# ── TESTIMONIALS ──────────────────────────────────────────────
-st.markdown("## 💬 Stories That Inspire")
-for t in fellou_info["testimonials"]:
-    st.markdown(f"""
-    <div class="testimonial-card">
-        <div class="quote">"{t['quote']}"</div>
-        <div class="author">— {t['user']} <span style="color:#64748b;">{t['handle']}</span></div>
-    </div>
-    """, unsafe_allow_html=True)
+# ---------------- FAQ ----------------
+st.markdown("""
+<h2 class="section-title">❓ Frequently Asked Questions</h2>
+""", unsafe_allow_html=True)
 
-# ── FAQ ───────────────────────────────────────────────────────
-st.markdown("## ❓ Frequently Asked Questions")
-for q in fellou_info["faq"]:
+faq_data = {
+    "Can AI automate apps and websites?":
+    "Yes. Fellou AI can automate workflows across apps and browsers.",
+
+    "Can I control the AI actions?":
+    "Yes. You can monitor and intervene anytime.",
+
+    "Does it support desktop automation?":
+    "Yes. It can operate local apps and files.",
+
+    "Can I schedule tasks?":
+    "Absolutely. AI workflows can run automatically."
+}
+
+for q, a in faq_data.items():
     with st.expander(q):
-        st.write("Visit [fellou.ai](https://fellou.ai) for the full answer.")
+        st.write(a)
 
-# ── MISSION ───────────────────────────────────────────────────
-st.markdown(f"""
-<div class="mission-box">
-    🚀 <strong>Our Mission</strong><br><br>
-    {fellou_info['mission']}
+# ---------------- MISSION ----------------
+st.markdown("""
+<h2 class="section-title">🚀 Our Mission</h2>
+
+<div class="feature-card" style="text-align:center;">
+<h3>Empowering Humanity with Intelligent Productivity</h3>
+
+<p>
+Bring a digital companion to every device and every person.
+</p>
 </div>
 """, unsafe_allow_html=True)
 
-# ── FOOTER ────────────────────────────────────────────────────
-st.markdown("---")
-st.markdown(
-    "<p style='text-align:center; color:#475569;'>Fellou AI Browser · hi@fellou.ai · "
-    "<a href='https://fellou.ai' style='color:#7c3aed;'>fellou.ai</a></p>",
-    unsafe_allow_html=True
-)
+# ---------------- FOOTER ----------------
+st.markdown("""
+<div class="footer">
+
+<h3>Fellou AI Browser</h3>
+
+<p>
+Built with ❤️ using Streamlit
+</p>
+
+<p>
+Docs • API • Contact • Github
+</p>
+
+</div>
+""", unsafe_allow_html=True)
