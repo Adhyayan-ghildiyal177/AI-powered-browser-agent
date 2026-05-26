@@ -413,42 +413,100 @@ st.markdown("""
 <style>
 
 .particles{
-
-position:relative;
-
-width:0;
-height:0;
-
-margin:auto;
+    position:relative;
+    width:0;
+    height:0;
+    margin:auto;
 }
 
 /* PARTICLES */
 
 .particle{
+    position:absolute;
+    width:10px;
+    height:10px;
+    border-radius:50%;
+    background:#60a5fa;
 
-position:absolute;
+    box-shadow:
+    0 0 20px #60a5fa;
 
-width:10px;
-height:10px;
-
-border-radius:50%;
-
-background:#60a5fa;
-
-box-shadow:
-0 0 20px #60a5fa;
-
-animation:
-particleFloat 6s linear infinite;
+    animation:
+    particleFloat 6s linear infinite;
 }
 
 /* DIFFERENT POSITIONS */
 
 .particle:nth-child(1){
-top:-180px;
-left:-120px;
-animation-delay:0s;
+    top:-180px;
+    left:-120px;
+    animation-delay:0s;
 }
+
+.particle:nth-child(2){
+    top:-120px;
+    left:140px;
+    animation-delay:1s;
+}
+
+.particle:nth-child(3){
+    top:80px;
+    left:-160px;
+    animation-delay:2s;
+}
+
+.particle:nth-child(4){
+    top:140px;
+    left:120px;
+    animation-delay:3s;
+}
+
+.particle:nth-child(5){
+    top:0px;
+    left:200px;
+    animation-delay:4s;
+}
+
+/* FLOATING ANIMATION */
+
+@keyframes particleFloat{
+
+    0%{
+        transform:
+        translateY(0px)
+        scale(1);
+
+        opacity:0;
+    }
+
+    50%{
+        opacity:1;
+    }
+
+    100%{
+        transform:
+        translateY(-40px)
+        scale(1.5);
+
+        opacity:0;
+    }
+}
+
+</style>
+""", unsafe_allow_html=True)
+st.markdown("""
+
+<div class="particles">
+
+<div class="particle"></div>
+<div class="particle"></div>
+<div class="particle"></div>
+<div class="particle"></div>
+<div class="particle"></div>
+
+</div>
+
+""", unsafe_allow_html=True)
 
 .particle:nth-child(2){
 top:-120px;
