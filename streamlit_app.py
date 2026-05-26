@@ -261,13 +261,254 @@ transform:translateY(-6px);
 /* AI ORB */
 
 .orb{
-width:320px;
-height:320px;
 
-margin:70px auto;
+position:relative;
+
+width:340px;
+height:340px;
+
+margin:80px auto;
 
 border-radius:50%;
 
+background:
+conic-gradient(
+from 0deg,
+#60a5fa,
+#a855f7,
+#06b6d4,
+#60a5fa
+);
+
+animation:
+spin 10s linear infinite,
+floatOrb 6s ease-in-out infinite;
+
+box-shadow:
+0 0 60px rgba(96,165,250,.5),
+0 0 120px rgba(168,85,247,.35),
+0 0 180px rgba(6,182,212,.25);
+
+overflow:hidden;
+}
+
+/* INNER GLOW */
+
+.orb::before{
+
+content:"";
+
+position:absolute;
+
+inset:20px;
+
+border-radius:50%;
+
+background:
+radial-gradient(circle at top,
+rgba(255,255,255,.35),
+rgba(255,255,255,.05),
+transparent 70%);
+
+filter:blur(12px);
+
+animation:
+pulse 4s ease infinite;
+}
+
+/* OUTER RING */
+
+.orb::after{
+
+content:"";
+
+position:absolute;
+
+inset:-18px;
+
+border-radius:50%;
+
+border:
+2px solid rgba(255,255,255,.12);
+
+animation:
+rotateRing 12s linear infinite;
+
+filter:blur(2px);
+}
+
+/* FLOATING */
+
+@keyframes floatOrb{
+
+0%{
+transform:
+translateY(0px)
+rotate(0deg);
+}
+
+50%{
+transform:
+translateY(-20px)
+rotate(180deg);
+}
+
+100%{
+transform:
+translateY(0px)
+rotate(360deg);
+}
+
+}
+
+/* MAIN ROTATION */
+
+@keyframes spin{
+
+0%{
+filter:hue-rotate(0deg);
+}
+
+100%{
+filter:hue-rotate(360deg);
+}
+
+}
+
+/* GLOW PULSE */
+
+@keyframes pulse{
+
+0%{
+opacity:.6;
+transform:scale(1);
+}
+
+50%{
+opacity:1;
+transform:scale(1.05);
+}
+
+100%{
+opacity:.6;
+transform:scale(1);
+}
+
+}
+
+/* OUTER RING ROTATION */
+
+@keyframes rotateRing{
+
+0%{
+transform:rotate(0deg);
+}
+
+100%{
+transform:rotate(-360deg);
+}
+
+}
+st.markdown("""
+
+<div class="particles">
+
+<div class="particle"></div>
+<div class="particle"></div>
+<div class="particle"></div>
+<div class="particle"></div>
+<div class="particle"></div>
+
+</div>
+
+""", unsafe_allow_html=True)
+.particles{
+
+position:relative;
+
+width:0;
+height:0;
+
+margin:auto;
+}
+
+/* PARTICLES */
+
+.particle{
+
+position:absolute;
+
+width:10px;
+height:10px;
+
+border-radius:50%;
+
+background:#60a5fa;
+
+box-shadow:
+0 0 20px #60a5fa;
+
+animation:
+particleFloat 6s linear infinite;
+}
+
+/* DIFFERENT POSITIONS */
+
+.particle:nth-child(1){
+top:-180px;
+left:-120px;
+animation-delay:0s;
+}
+
+.particle:nth-child(2){
+top:-120px;
+left:140px;
+animation-delay:1s;
+}
+
+.particle:nth-child(3){
+top:80px;
+left:-160px;
+animation-delay:2s;
+}
+
+.particle:nth-child(4){
+top:140px;
+left:120px;
+animation-delay:3s;
+}
+
+.particle:nth-child(5){
+top:0px;
+left:200px;
+animation-delay:4s;
+}
+
+/* FLOATING PARTICLES */
+
+@keyframes particleFloat{
+
+0%{
+transform:
+translateY(0px)
+scale(1);
+
+opacity:0;
+}
+
+50%{
+opacity:1;
+}
+
+100%{
+transform:
+translateY(-40px)
+scale(1.5);
+
+opacity:0;
+}
+
+}
 background:
 radial-gradient(circle at top,
 #60a5fa,
