@@ -1050,7 +1050,7 @@ Watch Live Demo
 """, unsafe_allow_html=True)
 
 # =========================================================
-LAUNCH SECTION
+# LAUNCH SECTION
 # =========================================================
 
 st.markdown("""
