@@ -1120,7 +1120,7 @@ Start AI Session
 """, unsafe_allow_html=True)
 
 # =========================================================
-LIVE DEMO SECTION
+# LIVE DEMO SECTION
 # =========================================================
 
 st.markdown("""
@@ -1175,7 +1175,7 @@ across multiple websites and apps.
 """, unsafe_allow_html=True)
 
 # =========================================================
-AI TERMINAL
+# AI TERMINAL
 # =========================================================
 
 st.markdown("""
@@ -1199,7 +1199,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # =========================================================
-FEATURES
+# FEATURES
 # =========================================================
 
 st.markdown("""
@@ -1254,7 +1254,7 @@ for i in range(0, len(features), 3):
                 """, unsafe_allow_html=True)
 
 # =========================================================
-STATS
+# STATS
 # =========================================================
 
 st.markdown("""
@@ -1287,7 +1287,7 @@ for i, stat in enumerate(stats):
         """, unsafe_allow_html=True)
 
 # =========================================================
-TESTIMONIALS
+# TESTIMONIALS
 # =========================================================
 
 st.markdown("""
@@ -1318,7 +1318,7 @@ for t in testimonials:
     """, unsafe_allow_html=True)
 
 # =========================================================
-FAQ
+# FAQ
 # =========================================================
 
 st.markdown("""
@@ -1348,7 +1348,7 @@ for q, a in faq.items():
         st.write(a)
 
 # =========================================================
-MISSION
+# MISSION
 # =========================================================
 
 st.markdown("""
@@ -1370,7 +1370,7 @@ Building the world's most advanced autonomous AI browsing platform.
 """, unsafe_allow_html=True)
 
 # =========================================================
-FOOTER
+# FOOTER
 # =========================================================
 
 st.markdown("""
