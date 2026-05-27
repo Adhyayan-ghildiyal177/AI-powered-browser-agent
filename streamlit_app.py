@@ -1,6 +1,8 @@
 import streamlit as st
 
-# ---------------- PAGE CONFIG ----------------
+# =========================================================
+# PAGE CONFIG
+# =========================================================
 
 st.set_page_config(
     page_title="Fellou AI Browser",
@@ -9,7 +11,9 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# ---------------- CUSTOM CSS ----------------
+# =========================================================
+# CUSTOM CSS
+# =========================================================
 
 st.markdown("""
 <style>
@@ -24,7 +28,9 @@ html{
     scroll-behavior:smooth;
 }
 
-/* BACKGROUND */
+/* =========================================================
+BACKGROUND
+========================================================= */
 
 .stApp{
 
@@ -51,7 +57,6 @@ linear-gradient(
 );
 
 background-attachment:fixed;
-
 color:white;
 }
 
@@ -63,7 +68,9 @@ background:transparent;
 background:transparent;
 }
 
-/* REMOVE STREAMLIT */
+/* =========================================================
+REMOVE STREAMLIT UI
+========================================================= */
 
 #MainMenu{
 visibility:hidden;
@@ -77,7 +84,9 @@ header{
 visibility:hidden;
 }
 
-/* GRID */
+/* =========================================================
+3D GRID
+========================================================= */
 
 .grid-bg{
 position:fixed;
@@ -124,7 +133,9 @@ scale(2);
 
 }
 
-/* GLOW EFFECTS */
+/* =========================================================
+GLOW EFFECTS
+========================================================= */
 
 .glow{
 position:fixed;
@@ -198,7 +209,9 @@ transform:translate(0,0);
 
 }
 
-/* NAVBAR */
+/* =========================================================
+NAVBAR
+========================================================= */
 
 .navbar{
 
@@ -263,7 +276,9 @@ font-weight:500;
 color:#60a5fa;
 }
 
-/* HERO */
+/* =========================================================
+HERO
+========================================================= */
 
 .hero{
 
@@ -307,7 +322,9 @@ line-height:1.9;
 color:#b8c1d9;
 }
 
-/* BUTTONS */
+/* =========================================================
+BUTTONS
+========================================================= */
 
 .hero-buttons{
 
@@ -373,7 +390,9 @@ background:rgba(255,255,255,.05);
 transform:translateY(-6px);
 }
 
-/* ORB */
+/* =========================================================
+AI ORB
+========================================================= */
 
 .orb{
 
@@ -513,7 +532,9 @@ transform:rotate(-360deg);
 
 }
 
-/* PARTICLES */
+/* =========================================================
+PARTICLES
+========================================================= */
 
 .particles{
 position:relative;
@@ -590,7 +611,9 @@ opacity:0;
 
 }
 
-/* SECTION TITLE */
+/* =========================================================
+SECTION TITLES
+========================================================= */
 
 .section-title{
 
@@ -605,7 +628,9 @@ margin-bottom:55px;
 color:white;
 }
 
-/* FEATURES */
+/* =========================================================
+FEATURES
+========================================================= */
 
 .feature-card{
 
@@ -651,7 +676,9 @@ line-height:1.9;
 color:#d1d5db;
 }
 
-/* TERMINAL */
+/* =========================================================
+TERMINAL
+========================================================= */
 
 .terminal{
 
@@ -672,7 +699,9 @@ color:#4ade80;
 line-height:2;
 }
 
-/* STATS */
+/* =========================================================
+STATS
+========================================================= */
 
 .stat-box{
 background:rgba(255,255,255,.05);
@@ -691,7 +720,9 @@ color:#60a5fa;
 color:#d1d5db;
 }
 
-/* TESTIMONIAL */
+/* =========================================================
+TESTIMONIALS
+========================================================= */
 
 .testimonial{
 background:rgba(255,255,255,.04);
@@ -711,7 +742,198 @@ margin-top:18px;
 color:#60a5fa;
 }
 
-/* FOOTER */
+/* =========================================================
+LAUNCH SECTION
+========================================================= */
+
+.launch-section{
+margin-top:120px;
+}
+
+.launch-card{
+
+display:flex;
+gap:40px;
+
+align-items:center;
+
+background:rgba(255,255,255,.04);
+
+border:1px solid rgba(255,255,255,.08);
+
+padding:50px;
+
+border-radius:32px;
+
+backdrop-filter:blur(18px);
+
+flex-wrap:wrap;
+}
+
+.launch-left{
+flex:1;
+min-width:300px;
+}
+
+.launch-left h3{
+
+font-size:42px;
+margin-bottom:20px;
+
+color:white;
+}
+
+.launch-left p{
+
+line-height:1.9;
+color:#d1d5db;
+
+margin-bottom:25px;
+}
+
+.launch-left ul{
+line-height:2.2;
+color:#d1d5db;
+margin-bottom:30px;
+}
+
+/* =========================================================
+BROWSER WINDOW
+========================================================= */
+
+.browser-window{
+
+flex:1;
+
+min-width:320px;
+
+background:#020617;
+
+border-radius:24px;
+
+overflow:hidden;
+
+border:1px solid rgba(255,255,255,.08);
+
+box-shadow:
+0 0 50px rgba(99,102,241,.3);
+
+animation:floatWindow 6s ease infinite;
+}
+
+.browser-top{
+
+display:flex;
+gap:10px;
+
+padding:16px;
+
+background:#111827;
+}
+
+.dot{
+width:12px;
+height:12px;
+border-radius:50%;
+}
+
+.red{
+background:#ef4444;
+}
+
+.yellow{
+background:#facc15;
+}
+
+.green{
+background:#22c55e;
+}
+
+.browser-content{
+
+padding:35px;
+
+font-family:monospace;
+
+line-height:2.2;
+
+color:#4ade80;
+}
+
+@keyframes floatWindow{
+
+0%{
+transform:translateY(0px);
+}
+
+50%{
+transform:translateY(-12px);
+}
+
+100%{
+transform:translateY(0px);
+}
+
+}
+
+/* =========================================================
+DEMO SECTION
+========================================================= */
+
+.demo-grid{
+
+display:grid;
+
+grid-template-columns:
+repeat(auto-fit,minmax(280px,1fr));
+
+gap:28px;
+
+margin-top:50px;
+}
+
+.demo-card{
+
+background:rgba(255,255,255,.04);
+
+border:1px solid rgba(255,255,255,.08);
+
+padding:35px;
+
+border-radius:28px;
+
+transition:.4s;
+}
+
+.demo-card:hover{
+
+transform:
+translateY(-10px)
+scale(1.02);
+
+box-shadow:
+0 0 40px rgba(99,102,241,.35);
+}
+
+.demo-card h3{
+
+font-size:28px;
+
+margin-bottom:18px;
+
+color:#60a5fa;
+}
+
+.demo-card p{
+
+line-height:1.9;
+
+color:#d1d5db;
+}
+
+/* =========================================================
+FOOTER
+========================================================= */
 
 .footer{
 margin-top:120px;
@@ -720,10 +942,36 @@ text-align:center;
 color:#9ca3af;
 }
 
+/* =========================================================
+RESPONSIVE
+========================================================= */
+
+@media(max-width:768px){
+
+.hero h1{
+font-size:54px;
+}
+
+.hero p{
+font-size:18px;
+}
+
+.section-title{
+font-size:42px;
+}
+
+.nav-links{
+display:none;
+}
+
+}
+
 </style>
 """, unsafe_allow_html=True)
 
-# ---------------- EFFECTS ----------------
+# =========================================================
+BACKGROUND EFFECTS
+# =========================================================
 
 st.markdown("""
 <div class="grid-bg"></div>
@@ -731,7 +979,9 @@ st.markdown("""
 <div class="glow2"></div>
 """, unsafe_allow_html=True)
 
-# ---------------- NAVBAR ----------------
+# =========================================================
+NAVBAR
+# =========================================================
 
 st.markdown("""
 <div class="navbar">
@@ -743,11 +993,11 @@ st.markdown("""
 </div>
 
 <div class="nav-links">
-<a href="#">Features</a>
-<a href="#">Research</a>
-<a href="#">Pricing</a>
-<a href="#">Docs</a>
-<a href="#">Github</a>
+<a href="#launch">Launch</a>
+<a href="#demo">Demo</a>
+<a href="#features">Features</a>
+<a href="#research">Research</a>
+<a href="#pricing">Pricing</a>
 </div>
 
 </div>
@@ -755,7 +1005,9 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# ---------------- HERO ----------------
+# =========================================================
+HERO
+# =========================================================
 
 st.markdown("""
 <div class="hero">
@@ -772,11 +1024,11 @@ and executes complex tasks autonomously.
 
 <div class="hero-buttons">
 
-<a class="primary-btn" href="#">
+<a class="primary-btn" href="#launch">
 Launch AI Browser
 </a>
 
-<a class="secondary-btn" href="#">
+<a class="secondary-btn" href="#demo">
 Watch Live Demo
 </a>
 
@@ -797,7 +1049,134 @@ Watch Live Demo
 </div>
 """, unsafe_allow_html=True)
 
-# ---------------- AI DEMO ----------------
+# =========================================================
+LAUNCH SECTION
+# =========================================================
+
+st.markdown("""
+
+<div id="launch" class="launch-section">
+
+<h2 class="section-title">
+🚀 Launch Autonomous Browser
+</h2>
+
+<div class="launch-card">
+
+<div class="launch-left">
+
+<h3>
+AI Browser Control Center
+</h3>
+
+<p>
+Operate autonomous AI agents that browse,
+research, compare, summarize,
+and automate workflows in real-time.
+</p>
+
+<ul>
+<li>✔ Multi-tab AI reasoning</li>
+<li>✔ Autonomous workflows</li>
+<li>✔ Deep internet research</li>
+<li>✔ AI memory engine</li>
+<li>✔ Live browser control</li>
+</ul>
+
+<a class="primary-btn" href="#">
+Start AI Session
+</a>
+
+</div>
+
+<div class="launch-right">
+
+<div class="browser-window">
+
+<div class="browser-top">
+<div class="dot red"></div>
+<div class="dot yellow"></div>
+<div class="dot green"></div>
+</div>
+
+<div class="browser-content">
+
+<p>> Opening 12 websites...</p>
+<p>> Comparing AI models...</p>
+<p>> Extracting market data...</p>
+<p>> Generating insights...</p>
+<p>> Workflow completed.</p>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+""", unsafe_allow_html=True)
+
+# =========================================================
+LIVE DEMO SECTION
+# =========================================================
+
+st.markdown("""
+
+<div id="demo">
+
+<h2 class="section-title">
+🎥 Live AI Demonstration
+</h2>
+
+<div class="demo-grid">
+
+<div class="demo-card">
+
+<h3>AI Research Mode</h3>
+
+<p>
+The AI independently searches the internet,
+compares sources,
+and generates structured reports.
+</p>
+
+</div>
+
+<div class="demo-card">
+
+<h3>Autonomous Shopping</h3>
+
+<p>
+AI agents compare products,
+analyze reviews,
+and recommend best choices instantly.
+</p>
+
+</div>
+
+<div class="demo-card">
+
+<h3>Workflow Automation</h3>
+
+<p>
+Execute repetitive workflows automatically
+across multiple websites and apps.
+</p>
+
+</div>
+
+</div>
+
+</div>
+
+""", unsafe_allow_html=True)
+
+# =========================================================
+AI TERMINAL
+# =========================================================
 
 st.markdown("""
 <h2 class="section-title">
@@ -819,12 +1198,18 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# ---------------- FEATURES ----------------
+# =========================================================
+FEATURES
+# =========================================================
 
 st.markdown("""
+<div id="features">
+
 <h2 class="section-title">
 ⚡ Next-Gen AI Features
 </h2>
+
+</div>
 """, unsafe_allow_html=True)
 
 features = [
@@ -868,7 +1253,9 @@ for i in range(0, len(features), 3):
                 </div>
                 """, unsafe_allow_html=True)
 
-# ---------------- STATS ----------------
+# =========================================================
+STATS
+# =========================================================
 
 st.markdown("""
 <h2 class="section-title">
@@ -899,7 +1286,9 @@ for i, stat in enumerate(stats):
         </div>
         """, unsafe_allow_html=True)
 
-# ---------------- TESTIMONIALS ----------------
+# =========================================================
+TESTIMONIALS
+# =========================================================
 
 st.markdown("""
 <h2 class="section-title">
@@ -928,7 +1317,9 @@ for t in testimonials:
     </div>
     """, unsafe_allow_html=True)
 
-# ---------------- FAQ ----------------
+# =========================================================
+FAQ
+# =========================================================
 
 st.markdown("""
 <h2 class="section-title">
@@ -956,7 +1347,9 @@ for q, a in faq.items():
     with st.expander(q):
         st.write(a)
 
-# ---------------- MISSION ----------------
+# =========================================================
+MISSION
+# =========================================================
 
 st.markdown("""
 <h2 class="section-title">
@@ -976,7 +1369,9 @@ Building the world's most advanced autonomous AI browsing platform.
 </div>
 """, unsafe_allow_html=True)
 
-# ---------------- FOOTER ----------------
+# =========================================================
+FOOTER
+# =========================================================
 
 st.markdown("""
 <div class="footer">
