@@ -970,7 +970,7 @@ display:none;
 """, unsafe_allow_html=True)
 
 # =========================================================
-BACKGROUND EFFECTS
+# BACKGROUND EFFECTS
 # =========================================================
 
 st.markdown("""
