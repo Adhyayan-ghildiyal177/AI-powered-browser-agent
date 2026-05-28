@@ -1,6 +1,4 @@
-from pathlib import Path
 
-code = r'''
 import os
 import time
 import json
@@ -1542,21 +1540,3 @@ st.markdown("""
   <p>© 2026 Fellou AI. All rights reserved.</p>
 </div>
 """, unsafe_allow_html=True)
-'''
-
-path = Path("/mnt/data/fellou_ai_browser_streamlit.py")
-path.write_text(code, encoding="utf-8")
-
-# Also create a minimal requirements file for convenience
-req = """streamlit
-requests
-beautifulsoup4
-openai
-playwright
-chromadb
-"""
-Path("/mnt/data/requirements.txt").write_text(req, encoding="utf-8")
-
-print(f"Created: {path}")
-print("Created: /mnt/data/requirements.txt")
-print(f"Lines in main file: {len(code.splitlines())}")
