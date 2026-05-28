@@ -1532,17 +1532,34 @@ for col, (title, desc) in zip(roadmap_cols, roadmap):
 
 st.markdown("""
 <div class="footer">
-  <h2 style="color:white;">🚀Ghildiyal AI Browser</h2>
-  <p>AI-native autonomous browsing platform</p>
-  <br>
-  <p>Features • Research • Docs • API • Contact • Github</p>
-  <br>
-<p>© 2026 Ghildiyal AI. All rights reserved.</p>
 
-<p style="
-margin-top:10px;
-font-size:14px;
-color:#60a5fa;
-">
-Made by Adhyayan Ghildiyal
-</p>
+  <h2 style="color:white;">
+    🚀 Ghildiyal AI Browser
+  </h2>
+
+  <p>
+    AI-native autonomous browsing platform
+  </p>
+
+  <br>
+
+  <p>
+    Features • Research • Docs • API • Contact • Github
+  </p>
+
+  <br>
+
+  <p>
+    © 2026 Ghildiyal AI. All rights reserved.
+  </p>
+
+  <p style="
+    margin-top:10px;
+    font-size:14px;
+    color:#60a5fa;
+  ">
+    Made by Adhyayan Ghildiyal
+  </p>
+
+</div>
+""", unsafe_allow_html=True)
