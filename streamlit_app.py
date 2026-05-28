@@ -15,7 +15,7 @@ import streamlit as st
 # =========================================================
 
 st.set_page_config(
-    page_title="Fellou AI Browser",
+    page_title="Ghildiyal AI Browser",
     page_icon="🚀",
     layout="wide",
     initial_sidebar_state="collapsed",
