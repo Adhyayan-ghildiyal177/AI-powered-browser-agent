@@ -859,7 +859,7 @@ st.markdown("""
 # =========================================================
 
 with st.sidebar:
-    st.markdown("## 🚀 Fellou AI Command Center")
+    st.markdown("## 🚀 Ghildiyal AI Command Center")
     st.caption("Your browser companion, research engine, and automation console.")
     st.markdown("### Quick Modes")
     mode = st.radio(
@@ -898,7 +898,7 @@ with st.sidebar:
 st.markdown("""
 <div class="navbar">
   <div class="nav-flex">
-    <div class="logo">🚀 Fellou AI</div>
+    <div class="logo">🚀Ghildiyal AI</div>
     <div class="nav-links">
       <a href="#launch">Launch</a>
       <a href="#demo">Demo</a>
@@ -1025,7 +1025,7 @@ with launch_col1:
         unsafe_allow_html=True,
     )
     st.markdown("### Start Session")
-    session_name = st.text_input("Session name", value="Fellou Session")
+    session_name = st.text_input("Session name", value="Ghildiyal Session")
     start_col1, start_col2, start_col3 = st.columns(3)
     with start_col1:
         if st.button("Browse", use_container_width=True):
@@ -1476,7 +1476,7 @@ st.markdown("## ❓ Frequently Asked Questions")
 
 faq = {
     "Can AI automate apps and websites?":
-        "Yes. Fellou AI can automate workflows across websites and desktop apps.",
+        "Yes.Ghildiyal AI can automate workflows across websites and desktop apps.",
     "Can I monitor AI actions in real-time?":
         "Yes. Every AI step is visible and controllable.",
     "Does it support deep research?":
@@ -1532,11 +1532,17 @@ for col, (title, desc) in zip(roadmap_cols, roadmap):
 
 st.markdown("""
 <div class="footer">
-  <h2 style="color:white;">🚀 Fellou AI Browser</h2>
+  <h2 style="color:white;">🚀Ghildiyal AI Browser</h2>
   <p>AI-native autonomous browsing platform</p>
   <br>
   <p>Features • Research • Docs • API • Contact • Github</p>
   <br>
-  <p>© 2026 Fellou AI. All rights reserved.</p>
-</div>
-""", unsafe_allow_html=True)
+<p>© 2026 Ghildiyal AI. All rights reserved.</p>
+
+<p style="
+margin-top:10px;
+font-size:14px;
+color:#60a5fa;
+">
+Made by Adhyayan Ghildiyal
+</p>
