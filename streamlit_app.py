@@ -259,31 +259,39 @@ def browser_command(command: str):
     if any(word in command for word in ["memory", "remember"]):
         return "Memory mode activated. Notes will be stored in the personal memory vault."
     return "Command received. The AI browser will interpret it in the workflow engine."
+# 3) Serper web search
+elif requests and serper_key:
 
-def fake_status_steps():
-    return [
-        "Initializing AI agents...",
-        "Mapping browser context...",
-        "Scanning tabs and sources...",
-        "Analyzing page structure...",
-        "Synthesizing insights...",
-        "Preparing action plan...",
-        "Task completed successfully.",
-    ]
+    try:
+        r = requests.post(
+            "https://google.serper.dev/search",
+            headers={
+                "X-API-KEY": serper_key,
+                "Content-Type": "application/json"
+            },
+            json={"q": query},
+            timeout=15,
+        )
 
-# =========================================================
-# STYLING
-# =========================================================
+        data = r.json()
 
-st.markdown("""
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700;800;900&display=swap');
+        for item in data.get("organic", [])[:5]:
 
-* {
-    font-family: 'Inter', sans-serif;
-}
+            results.append({
+                "title": item.get("title", "Untitled"),
+                "link": item.get("link", ""),
+                "snippet": item.get("snippet", ""),
+                "source": "Serper",
+            })
 
-html {
+    except Exception as e:
+
+        results.append({
+            "title": "Search error",
+            "link": "",
+            "snippet": str(e),
+            "source": "Serper",
+        })
     scroll-behavior: smooth;
 }
 
