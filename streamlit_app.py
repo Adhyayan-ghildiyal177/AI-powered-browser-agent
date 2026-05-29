@@ -147,16 +147,17 @@ def safe_llm_answer(prompt: str) -> str:
 from urllib.parse import quote_plus
 
 def web_search(query: str):
-    """
-    Real web results using DuckDuckGo HTML.
-    No API key needed.
-    """
-    results = []
 
-    # If user types a math expression, calculate it locally.
+    from urllib.parse import quote_plus
     import re
     import ast
     import operator as op
+
+    results = []
+
+    # -----------------------------
+    # SIMPLE MATH SUPPORT
+    # -----------------------------
 
     allowed_ops = {
         ast.Add: op.add,
@@ -170,93 +171,156 @@ def web_search(query: str):
     }
 
     def safe_math_eval(expr: str):
-        expr = expr.strip().replace("×", "*").replace("÷", "/")
+
+        expr = expr.strip()
+        expr = expr.replace("×", "*")
+        expr = expr.replace("÷", "/")
+
         if not re.fullmatch(r"[0-9\.\+\-\*\/\%\(\)\s\^]+", expr):
             return None
+
         expr = expr.replace("^", "**")
 
         def _eval(node):
+
             if isinstance(node, ast.Expression):
                 return _eval(node.body)
-            if isinstance(node, ast.Constant) and isinstance(node.value, (int, float)):
+
+            if isinstance(node, ast.Constant):
                 return node.value
+
             if isinstance(node, ast.Num):
                 return node.n
-            if isinstance(node, ast.BinOp) and type(node.op) in allowed_ops:
-                return allowed_ops[type(node.op)](_eval(node.left), _eval(node.right))
-            if isinstance(node, ast.UnaryOp) and type(node.op) in allowed_ops:
-                return allowed_ops[type(node.op)](_eval(node.operand))
-            raise ValueError("Unsafe expression")
+
+            if isinstance(node, ast.BinOp):
+
+                if type(node.op) not in allowed_ops:
+                    raise ValueError("Invalid operator")
+
+                return allowed_ops[type(node.op)](
+                    _eval(node.left),
+                    _eval(node.right)
+                )
+
+            if isinstance(node, ast.UnaryOp):
+
+                if type(node.op) not in allowed_ops:
+                    raise ValueError("Invalid unary")
+
+                return allowed_ops[type(node.op)](
+                    _eval(node.operand)
+                )
+
+            raise ValueError("Unsafe")
 
         try:
+
             tree = ast.parse(expr, mode="eval")
+
             result = _eval(tree)
+
             if isinstance(result, float) and result.is_integer():
                 result = int(result)
+
             return str(result)
-        except Exception:
+
+        except:
             return None
 
+    # -----------------------------
+    # CHECK MATH
+    # -----------------------------
+
     math_result = safe_math_eval(query)
+
     if math_result is not None:
+
         return [{
             "title": f"Answer: {math_result}",
             "link": "",
-            "snippet": f"The expression {query} = {math_result}",
+            "snippet": f"{query} = {math_result}",
             "source": "Calculator",
         }]
 
+    # -----------------------------
+    # REAL SEARCH
+    # -----------------------------
+
     if requests and BeautifulSoup:
+
         try:
+
             url = f"https://html.duckduckgo.com/html/?q={quote_plus(query)}"
+
             headers = {
                 "User-Agent": (
-                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                    "AppleWebKit/537.36 (KHTML, like Gecko) "
-                    "Chrome/120.0.0.0 Safari/537.36"
+                    "Mozilla/5.0 "
+                    "(Windows NT 10.0; Win64; x64) "
+                    "AppleWebKit/537.36 "
+                    "(KHTML, like Gecko) "
+                    "Chrome/120 Safari/537.36"
                 )
             }
-            r = requests.get(url, headers=headers, timeout=15)
+
+            r = requests.get(
+                url,
+                headers=headers,
+                timeout=15
+            )
+
             soup = BeautifulSoup(r.text, "html.parser")
 
-            result_cards = soup.select(".result")
+            cards = soup.select(".result")
 
-            for card in result_cards[:5]:
+            for card in cards[:5]:
+
                 title_tag = card.select_one(".result__title a")
                 snippet_tag = card.select_one(".result__snippet")
-                link = title_tag.get("href", "") if title_tag else ""
-                title = title_tag.get_text(" ", strip=True) if title_tag else "Untitled"
-                snippet = snippet_tag.get_text(" ", strip=True) if snippet_tag else ""
 
-                if title or snippet:
-                    results.append({
-                        "title": title,
-                        "link": link,
-                        "snippet": snippet,
-                        "source": "DuckDuckGo",
-                    })
+                title = (
+                    title_tag.get_text(" ", strip=True)
+                    if title_tag else "Untitled"
+                )
+
+                link = (
+                    title_tag.get("href", "")
+                    if title_tag else ""
+                )
+
+                snippet = (
+                    snippet_tag.get_text(" ", strip=True)
+                    if snippet_tag else ""
+                )
+
+                results.append({
+                    "title": title,
+                    "link": link,
+                    "snippet": snippet,
+                    "source": "DuckDuckGo",
+                })
 
             if results:
                 return results
 
         except Exception as e:
-            results.append({
-                "title": "Search error",
+
+            return [{
+                "title": "Search Error",
                 "link": "",
                 "snippet": str(e),
                 "source": "DuckDuckGo",
-            })
-            return results
+            }]
 
-       return [{
+    # -----------------------------
+    # FALLBACK
+    # -----------------------------
+
+    return [{
         "title": f"Search results for '{query}'",
         "link": "https://duckduckgo.com",
-        "snippet": "Requests or BeautifulSoup is missing, so live search could not run.",
-        "source": "Demo",
+        "snippet": "Live search unavailable.",
+        "source": "Fallback",
     }]
-
-async def fetch_url_info_async(url: str):
-async def fetch_url_info_async(url: str):
     if not PLAYWRIGHT_AVAILABLE:
         return {"title": "Playwright unavailable", "content": "", "error": "Install playwright"}
     try:
