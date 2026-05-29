@@ -1227,28 +1227,49 @@ with chat_col1:
             st.markdown(f"**AI:** {msg['content']}")
 
 with chat_col2:
-    st.markdown("## 🔎 Web Search Engine")
-    st.caption("Tavily / Serper supported. Demo fallback included.")
-    search_term = st.text_input("Search the web", value=st.session_state.search_query, key="search_input")
-    if st.button("Run search", use_container_width=True):
-        if search_term.strip():
-            st.session_state.search_query = search_term.strip()
-            st.session_state.task_status = "Search completed."
-            add_log(f"Search run: {search_term}")
-    if st.session_state.search_query.strip():
-        results = web_search(st.session_state.search_query.strip())
-        for result in results:
-            st.markdown(
-                f"""
-                <div class="sidebar-card">
-                    <div class="small-kicker">{result['source']}</div>
-                    <div style="font-size:18px;font-weight:800;">{result['title']}</div>
-                    <div style="color:#cbd5e1;margin-top:8px;">{result['snippet']}</div>
-                    <div style="margin-top:8px;color:#93c5fd;">{result['link']}</div>
+    # =========================================================
+# SEARCH ENGINE
+# =========================================================
+
+st.markdown("## 🔎 Search the Web")
+
+search_term = st.text_input(
+    "Search something",
+    value=st.session_state.get("search_query", ""),
+    placeholder="Search anything like Google..."
+)
+
+if st.button("Search Web", use_container_width=True):
+    st.session_state.search_query = search_term.strip()
+    st.session_state.task_status = "Search completed."
+    add_log(f"Search run: {search_term}")
+
+if st.session_state.get("search_query", "").strip():
+    query = st.session_state.search_query.strip()
+    results = web_search(query)
+
+    st.markdown("### Search Results")
+
+    for result in results:
+        st.markdown(
+            f"""
+            <div class="sidebar-card">
+                <div class="small-kicker">{result['source']}</div>
+                <div style="font-size:22px; font-weight:800; margin-top:10px;">
+                    <a href="{result['link']}" target="_blank" style="color:#93c5fd; text-decoration:none;">
+                        {result['title']}
+                    </a>
                 </div>
-                """,
-                unsafe_allow_html=True,
-            )
+                <div style="color:#cbd5e1; margin-top:10px; line-height:1.8;">
+                    {result['snippet']}
+                </div>
+                <div style="margin-top:12px; color:#60a5fa; font-size:14px;">
+                    {result['link']}
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
 
 # =========================================================
 # DEMO SECTION
