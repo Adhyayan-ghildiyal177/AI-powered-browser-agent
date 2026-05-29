@@ -1,10 +1,4 @@
 streamlit
-os
-time
-json
-math
-random
-asyncio
-textwrap
-datetime 
-Paths
+requests
+beautifulsoup4
+openai
