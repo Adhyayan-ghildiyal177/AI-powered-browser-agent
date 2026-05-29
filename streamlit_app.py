@@ -218,13 +218,20 @@ def web_search(query: str):
                 timeout=15
             )
             data = r.json()
-            for item in data.get("results", []):
-                results.append({
-                    "title": item.get("title", "No Title"),
-                    "link": item.get("url", ""),
-                    "snippet": item.get("content", ""),
-                    "source": "Tavily",
-                })
+          for item in data.get("results", []):
+
+    link = item.get("url", "")
+
+    # FIX LINKS
+    if link.startswith("//"):
+        link = "https:" + link
+
+    results.append({
+        "title": item.get("title", "No Title"),
+        "link": link,
+        "snippet": item.get("content", ""),
+        "source": "Tavily",
+    })
             if results:
                 return results
         except Exception as e:
