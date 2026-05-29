@@ -259,39 +259,41 @@ def browser_command(command: str):
     if any(word in command for word in ["memory", "remember"]):
         return "Memory mode activated. Notes will be stored in the personal memory vault."
     return "Command received. The AI browser will interpret it in the workflow engine."
-# 3) Serper web search
-elif requests and serper_key:
+    # 3) Serper web search
+    elif requests and serper_key:
 
-    try:
-        r = requests.post(
-            "https://google.serper.dev/search",
-            headers={
-                "X-API-KEY": serper_key,
-                "Content-Type": "application/json"
-            },
-            json={"q": query},
-            timeout=15,
-        )
+        try:
+            r = requests.post(
+                "https://google.serper.dev/search",
+                headers={
+                    "X-API-KEY": serper_key,
+                    "Content-Type": "application/json"
+                },
+                json={"q": query},
+                timeout=15,
+            )
 
-        data = r.json()
+            data = r.json()
 
-        for item in data.get("organic", [])[:5]:
+            for item in data.get("organic", [])[:5]:
+
+                results.append({
+                    "title": item.get("title", "Untitled"),
+                    "link": item.get("link", ""),
+                    "snippet": item.get("snippet", ""),
+                    "source": "Serper",
+                })
+
+        except Exception as e:
 
             results.append({
-                "title": item.get("title", "Untitled"),
-                "link": item.get("link", ""),
-                "snippet": item.get("snippet", ""),
+                "title": "Search error",
+                "link": "",
+                "snippet": str(e),
                 "source": "Serper",
             })
 
-    except Exception as e:
-
-        results.append({
-            "title": "Search error",
-            "link": "",
-            "snippet": str(e),
-            "source": "Serper",
-        })
+    # 4) No API key available
     scroll-behavior: smooth;
 }
 
