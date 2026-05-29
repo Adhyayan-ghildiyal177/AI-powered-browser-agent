@@ -209,15 +209,21 @@ def web_search(query: str):
     serper_key = os.getenv("SERPER_API_KEY", "").strip()
     tavily_key = os.getenv("TAVILY_API_KEY", "").strip()
 
-    # Tavily Search (if key provided)
+      # Tavily Search (if key provided)
     if requests is not None and tavily_key:
+
         try:
             r = requests.post(
                 "https://api.tavily.com/search",
-                json={"api_key": tavily_key, "query": query, "max_results": 5},
+                json={
+                    "api_key": tavily_key,
+                    "query": query,
+                    "max_results": 5
+                },
                 timeout=15
             )
-                    data = r.json()
+
+            data = r.json()
 
             for item in data.get("results", []):
 
@@ -233,6 +239,14 @@ def web_search(query: str):
                     "source": "Tavily",
                 })
 
+        except Exception as e:
+
+            results.append({
+                "title": "Search Error",
+                "link": "",
+                "snippet": str(e),
+                "source": "Tavily",
+            })
     link = item.get("url", "")
 
     # FIX LINKS
