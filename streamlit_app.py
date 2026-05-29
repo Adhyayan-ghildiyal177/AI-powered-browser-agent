@@ -144,14 +144,71 @@ def safe_llm_answer(prompt: str) -> str:
 # WEB SEARCH FUNCTION
 # =========================================================
 
-def web_search(query: str):
+import re
+import ast
+import operator as op
 
+_allowed_ops = {
+    ast.Add: op.add,
+    ast.Sub: op.sub,
+    ast.Mult: op.mul,
+    ast.Div: op.truediv,
+    ast.Pow: op.pow,
+    ast.USub: op.neg,
+    ast.UAdd: op.pos,
+    ast.Mod: op.mod,
+}
+
+def safe_math_eval(expr: str):
+    """
+    Safely evaluate simple math like 2+3, 10/2, 5*7, (2+3)*4.
+    Returns a string result or None if it is not a math expression.
+    """
+    expr = expr.strip().replace("×", "*").replace("÷", "/")
+    if not re.fullmatch(r"[0-9\.\+\-\*\/\%\(\)\s\^]+", expr):
+        return None
+
+    expr = expr.replace("^", "**")
+
+    def _eval(node):
+        if isinstance(node, ast.Expression):
+            return _eval(node.body)
+        if isinstance(node, ast.Constant) and isinstance(node.value, (int, float)):
+            return node.value
+        if isinstance(node, ast.Num):  # older Python compatibility
+            return node.n
+        if isinstance(node, ast.BinOp) and type(node.op) in _allowed_ops:
+            return _allowed_ops[type(node.op)](_eval(node.left), _eval(node.right))
+        if isinstance(node, ast.UnaryOp) and type(node.op) in _allowed_ops:
+            return _allowed_ops[type(node.op)](_eval(node.operand))
+        raise ValueError("Unsafe expression")
+
+    try:
+        tree = ast.parse(expr, mode="eval")
+        result = _eval(tree)
+        if isinstance(result, float) and result.is_integer():
+            result = int(result)
+        return str(result)
+    except Exception:
+        return None
+
+def web_search(query: str):
     serper_key = os.getenv("SERPER_API_KEY", "").strip()
     tavily_key = os.getenv("TAVILY_API_KEY", "").strip()
 
+    # 1) If it is a math expression, return the answer directly.
+    math_result = safe_math_eval(query)
+    if math_result is not None:
+        return [{
+            "title": f"Answer: {math_result}",
+            "link": "",
+            "snippet": f"The expression {query} = {math_result}",
+            "source": "Calculator",
+        }]
+
     results = []
 
-    # TAVILY SEARCH
+    # 2) Tavily web search
     if requests and tavily_key:
         try:
             r = requests.post(
@@ -163,20 +220,16 @@ def web_search(query: str):
                 },
                 timeout=15,
             )
-
             data = r.json()
 
             for item in data.get("results", []):
-
                 results.append({
                     "title": item.get("title", "Untitled"),
                     "link": item.get("url", ""),
                     "snippet": item.get("content", ""),
                     "source": "Tavily",
                 })
-
         except Exception as e:
-
             results.append({
                 "title": "Search error",
                 "link": "",
@@ -184,9 +237,8 @@ def web_search(query: str):
                 "source": "Tavily",
             })
 
-    # SERPER SEARCH
+    # 3) Serper web search
     elif requests and serper_key:
-
         try:
             r = requests.post(
                 "https://google.serper.dev/search",
@@ -197,9 +249,33 @@ def web_search(query: str):
                 json={"q": query},
                 timeout=15,
             )
-
             data = r.json()
 
+            for item in data.get("organic", [])[:5]:
+                results.append({
+                    "title": item.get("title", "Untitled"),
+                    "link": item.get("link", ""),
+                    "snippet": item.get("snippet", ""),
+                    "source": "Serper",
+                })
+        except Exception as e:
+            results.append({
+                "title": "Search error",
+                "link": "",
+                "snippet": str(e),
+                "source": "Serper",
+            })
+
+    # 4) No API key available
+    else:
+        results = [{
+            "title": f"Search results for '{query}'",
+            "link": "",
+            "snippet": "Add SERPER_API_KEY or TAVILY_API_KEY in Streamlit secrets or environment variables to get live web results.",
+            "source": "No API key",
+        }]
+
+    return results
             for item in data.get("organic", [])[:5]:
 
                 results.append({
