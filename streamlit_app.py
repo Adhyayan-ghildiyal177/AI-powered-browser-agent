@@ -1,3 +1,13 @@
+
+import os
+import time
+import json
+import math
+import random
+import asyncio
+import textwrap
+from datetime import datetime
+
 import streamlit as st
 
 # =========================================================
@@ -5,967 +15,832 @@ import streamlit as st
 # =========================================================
 
 st.set_page_config(
-    page_title="Fellou AI Browser",
+    page_title="Ghildiyal AI Browser",
     page_icon="🚀",
     layout="wide",
-    initial_sidebar_state="collapsed"
+    initial_sidebar_state="collapsed",
 )
 
 # =========================================================
-# CUSTOM CSS
+# OPTIONAL IMPORTS / SAFE FALLBACKS
+# =========================================================
+
+try:
+    import requests
+except Exception:
+    requests = None
+
+try:
+    from bs4 import BeautifulSoup
+except Exception:
+    BeautifulSoup = None
+
+try:
+    from openai import OpenAI
+except Exception:
+    OpenAI = None
+
+try:
+    from playwright.async_api import async_playwright
+    PLAYWRIGHT_AVAILABLE = True
+except Exception:
+    async_playwright = None
+    PLAYWRIGHT_AVAILABLE = False
+
+try:
+    import chromadb
+    CHROMA_AVAILABLE = True
+except Exception:
+    chromadb = None
+    CHROMA_AVAILABLE = False
+
+# =========================================================
+# SESSION STATE
+# =========================================================
+
+if "chat_history" not in st.session_state:
+    st.session_state.chat_history = [
+        {"role": "assistant", "content": "Ready. Ask me to search, browse, summarize, or automate."}
+    ]
+
+if "workflow_log" not in st.session_state:
+    st.session_state.workflow_log = []
+
+if "memory_items" not in st.session_state:
+    st.session_state.memory_items = []
+
+if "task_status" not in st.session_state:
+    st.session_state.task_status = "Idle"
+
+if "demo_progress" not in st.session_state:
+    st.session_state.demo_progress = 0
+
+if "selected_mode" not in st.session_state:
+    st.session_state.selected_mode = "Browse"
+
+if "browser_url" not in st.session_state:
+    st.session_state.browser_url = "https://example.com"
+
+if "search_query" not in st.session_state:
+    st.session_state.search_query = ""
+
+if "command_text" not in st.session_state:
+    st.session_state.command_text = "Research the latest AI browser trends"
+
+if "voice_text" not in st.session_state:
+    st.session_state.voice_text = "Open research mode and compare AI browsers"
+
+if "file_notes" not in st.session_state:
+    st.session_state.file_notes = ""
+
+# =========================================================
+# HELPERS
+# =========================================================
+
+def add_log(message: str, kind: str = "info") -> None:
+    ts = datetime.now().strftime("%H:%M:%S")
+    st.session_state.workflow_log.insert(0, f"[{ts}] {message}")
+    st.session_state.workflow_log = st.session_state.workflow_log[:15]
+
+def add_memory(note: str) -> None:
+    note = note.strip()
+    if note:
+        st.session_state.memory_items.insert(0, {
+            "note": note,
+            "ts": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        })
+        st.session_state.memory_items = st.session_state.memory_items[:12]
+
+def simulate_stream(text: str, speed: float = 0.01):
+    placeholder = st.empty()
+    running = ""
+    for ch in text:
+        running += ch
+        placeholder.markdown(running)
+        time.sleep(speed)
+
+def safe_llm_answer(prompt: str) -> str:
+    api_key = os.getenv("OPENAI_API_KEY", "").strip()
+    if OpenAI and api_key:
+        try:
+            client = OpenAI(api_key=api_key)
+            resp = client.chat.completions.create(
+                model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"),
+                messages=[
+                    {"role": "system", "content": "You are a helpful AI browser assistant."},
+                    {"role": "user", "content": prompt},
+                ],
+                temperature=0.4,
+            )
+            return resp.choices[0].message.content.strip()
+        except Exception as e:
+            return f"OpenAI error: {e}"
+    return (
+        "Demo mode: connect OPENAI_API_KEY to enable real AI responses. "
+        f"Prompt received: {prompt}"
+    )
+
+def web_search(query: str):
+    serper_key = os.getenv("SERPER_API_KEY", "").strip()
+    tavily_key = os.getenv("TAVILY_API_KEY", "").strip()
+
+    results = []
+
+    if requests and tavily_key:
+        try:
+            r = requests.post(
+                "https://api.tavily.com/search",
+                json={"api_key": tavily_key, "query": query, "max_results": 5},
+                timeout=15,
+            )
+            data = r.json()
+            for item in data.get("results", []):
+                results.append({
+                    "title": item.get("title", "Untitled"),
+                    "link": item.get("url", ""),
+                    "snippet": item.get("content", ""),
+                    "source": "Tavily",
+                })
+        except Exception as e:
+            results.append({"title": "Search error", "link": "", "snippet": str(e), "source": "Tavily"})
+
+    elif requests and serper_key:
+        try:
+            r = requests.post(
+                "https://google.serper.dev/search",
+                headers={"X-API-KEY": serper_key, "Content-Type": "application/json"},
+                json={"q": query},
+                timeout=15,
+            )
+            data = r.json()
+            for item in data.get("organic", [])[:5]:
+                results.append({
+                    "title": item.get("title", "Untitled"),
+                    "link": item.get("link", ""),
+                    "snippet": item.get("snippet", ""),
+                    "source": "Serper",
+                })
+        except Exception as e:
+            results.append({"title": "Search error", "link": "", "snippet": str(e), "source": "Serper"})
+
+    if not results:
+        results = [
+            {
+                "title": "Demo search result 1",
+                "link": "https://example.com",
+                "snippet": f"Connect SERPER_API_KEY or TAVILY_API_KEY to search the web for: {query}",
+                "source": "Demo",
+            },
+            {
+                "title": "Demo search result 2",
+                "link": "https://example.com",
+                "snippet": "This app supports real search APIs, browser automation, and AI summaries.",
+                "source": "Demo",
+            },
+        ]
+    return results
+
+async def fetch_url_info_async(url: str):
+    if not PLAYWRIGHT_AVAILABLE:
+        return {"title": "Playwright unavailable", "content": "", "error": "Install playwright"}
+    try:
+        async with async_playwright() as p:
+            browser = await p.chromium.launch(headless=True)
+            page = await browser.new_page(viewport={"width": 1440, "height": 1200})
+            await page.goto(url, wait_until="domcontentloaded", timeout=30000)
+            title = await page.title()
+            text = await page.locator("body").inner_text(timeout=10000)
+            await browser.close()
+            return {"title": title, "content": text[:5000], "error": ""}
+    except Exception as e:
+        return {"title": "", "content": "", "error": str(e)}
+
+def fetch_url_info(url: str):
+    if PLAYWRIGHT_AVAILABLE:
+        try:
+            return asyncio.run(fetch_url_info_async(url))
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            return loop.run_until_complete(fetch_url_info_async(url))
+        except Exception as e:
+            return {"title": "", "content": "", "error": str(e)}
+    if requests:
+        try:
+            r = requests.get(url, timeout=15)
+            title = ""
+            content = r.text[:5000]
+            if BeautifulSoup:
+                soup = BeautifulSoup(r.text, "html.parser")
+                title = soup.title.get_text(strip=True) if soup.title else ""
+                content = soup.get_text(" ", strip=True)[:5000]
+            return {"title": title or "Fetched page", "content": content, "error": ""}
+        except Exception as e:
+            return {"title": "", "content": "", "error": str(e)}
+    return {"title": "", "content": "", "error": "requests unavailable"}
+
+def build_research_summary(query: str):
+    results = web_search(query)
+    summary_prompt = "Summarize and compare these search results:\n\n"
+    for idx, item in enumerate(results, 1):
+        summary_prompt += f"{idx}. {item['title']}\n{item['snippet']}\n{item['link']}\n\n"
+    return safe_llm_answer(summary_prompt)
+
+def browser_command(command: str):
+    command = command.lower().strip()
+    if any(word in command for word in ["search", "research", "find"]):
+        return "Research mode activated. Web search results updated."
+    if any(word in command for word in ["summarize", "summary"]):
+        return "Summary mode activated. The assistant will compress results into insights."
+    if any(word in command for word in ["open", "browse", "visit"]):
+        return "Browse mode activated. Enter a URL in the browser panel."
+    if any(word in command for word in ["compare", "vs", "versus"]):
+        return "Comparison mode activated. The dashboard will compare sources and features."
+    if any(word in command for word in ["memory", "remember"]):
+        return "Memory mode activated. Notes will be stored in the personal memory vault."
+    return "Command received. The AI browser will interpret it in the workflow engine."
+
+def fake_status_steps():
+    return [
+        "Initializing AI agents...",
+        "Mapping browser context...",
+        "Scanning tabs and sources...",
+        "Analyzing page structure...",
+        "Synthesizing insights...",
+        "Preparing action plan...",
+        "Task completed successfully.",
+    ]
+
+# =========================================================
+# STYLING
 # =========================================================
 
 st.markdown("""
 <style>
-
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700;800;900&display=swap');
 
-*{
-    font-family:'Inter',sans-serif;
-}
-
-html{
-    scroll-behavior:smooth;
-}
-
-/* =========================================================
-# BACKGROUND
-========================================================= */
-
-.stApp{
-
-background:
-
-radial-gradient(circle at top left,
-rgba(139,92,246,0.25),
-transparent 25%),
-
-radial-gradient(circle at top right,
-rgba(59,130,246,0.22),
-transparent 30%),
-
-radial-gradient(circle at bottom,
-rgba(6,182,212,0.18),
-transparent 30%),
-
-linear-gradient(
-135deg,
-#020617 0%,
-#000000 35%,
-#050816 65%,
-#0f172a 100%
-);
-
-background-attachment:fixed;
-color:white;
-}
-
-[data-testid="stAppViewContainer"]{
-background:transparent;
-}
-
-.main{
-background:transparent;
-}
-
-/* =========================================================
-# REMOVE STREAMLIT UI
-========================================================= */
-
-#MainMenu{
-visibility:hidden;
-}
-
-footer{
-visibility:hidden;
-}
-
-header{
-visibility:hidden;
-}
-
-/* =========================================================
-# 3D GRID
-========================================================= */
-
-.grid-bg{
-position:fixed;
-width:100%;
-height:100%;
-
-background-image:
-linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
-linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
-
-background-size:50px 50px;
-
-transform:
-perspective(1000px)
-rotateX(75deg)
-scale(2);
-
-transform-origin:top;
-
-opacity:.18;
-
-z-index:-3;
-
-animation:gridmove 18s linear infinite;
-}
-
-@keyframes gridmove{
-
-0%{
-transform:
-perspective(1000px)
-rotateX(75deg)
-translateY(0)
-scale(2);
-}
-
-100%{
-transform:
-perspective(1000px)
-rotateX(75deg)
-translateY(50px)
-scale(2);
-}
-
-}
-
-/* =========================================================
-# GLOW EFFECTS
-========================================================= */
-
-.glow{
-position:fixed;
-width:800px;
-height:800px;
-
-background:
-radial-gradient(circle,
-rgba(168,85,247,.22),
-transparent 70%);
-
-filter:blur(140px);
-
-z-index:-1;
-
-top:-250px;
-left:-200px;
-
-animation: float 12s ease infinite;
-}
-
-.glow2{
-position:fixed;
-width:700px;
-height:700px;
-
-background:
-radial-gradient(circle,
-rgba(59,130,246,.18),
-transparent 70%);
-
-filter:blur(140px);
-
-z-index:-1;
-
-bottom:-250px;
-right:-200px;
-
-animation: float2 14s ease infinite;
-}
-
-@keyframes float{
-
-0%{
-transform:translate(0,0);
-}
-
-50%{
-transform:translate(120px,80px);
-}
-
-100%{
-transform:translate(0,0);
-}
-
-}
+* {
+    font-family: 'Inter', sans-serif;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+.stApp {
+    background:
+        radial-gradient(circle at top left, rgba(139,92,246,0.25), transparent 25%),
+        radial-gradient(circle at top right, rgba(59,130,246,0.22), transparent 30%),
+        radial-gradient(circle at bottom, rgba(6,182,212,0.18), transparent 30%),
+        linear-gradient(135deg, #020617 0%, #000000 35%, #050816 65%, #0f172a 100%);
+    background-attachment: fixed;
+    color: white;
+}
+
+[data-testid="stAppViewContainer"] { background: transparent; }
+.main { background: transparent; }
 
-@keyframes float2{
+#MainMenu, footer, header { visibility: hidden; }
 
-0%{
-transform:translate(0,0);
+.grid-bg {
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    inset: 0;
+    background-image:
+        linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+    background-size: 50px 50px;
+    transform: perspective(1000px) rotateX(75deg) scale(2);
+    transform-origin: top;
+    opacity: .16;
+    z-index: -3;
+    animation: gridmove 18s linear infinite;
 }
 
-50%{
-transform:translate(-100px,-60px);
+@keyframes gridmove {
+    0% { transform: perspective(1000px) rotateX(75deg) translateY(0) scale(2); }
+    100% { transform: perspective(1000px) rotateX(75deg) translateY(50px) scale(2); }
 }
-
-100%{
-transform:translate(0,0);
-}
-
-}
-
-/* =========================================================
-# NAVBAR
-========================================================= */
-
-.navbar{
-
-position:sticky;
-top:0;
-
-z-index:999;
-
-backdrop-filter:blur(18px);
-
-background:rgba(255,255,255,0.04);
-
-border:1px solid rgba(255,255,255,.08);
-
-padding:18px 40px;
-
-border-radius:22px;
-
-margin-bottom:40px;
-}
-
-.nav-flex{
-display:flex;
-justify-content:space-between;
-align-items:center;
-}
-
-.logo{
-
-font-size:32px;
-font-weight:900;
-
-background:
-linear-gradient(
-90deg,
-#60a5fa,
-#a855f7,
-#06b6d4
-);
-
--webkit-background-clip:text;
--webkit-text-fill-color:transparent;
-}
-
-.nav-links{
-display:flex;
-gap:30px;
-}
-
-.nav-links a{
-
-text-decoration:none;
-
-color:#d1d5db;
-
-transition:.3s;
-
-font-weight:500;
-}
-
-.nav-links a:hover{
-color:#60a5fa;
-}
-
-/* =========================================================
-# HERO
-========================================================= */
-
-.hero{
-
-padding-top:120px;
-padding-bottom:120px;
-
-text-align:center;
-}
-
-.hero h1{
-
-font-size:90px;
-font-weight:900;
-
-line-height:1.05;
-
-background:
-linear-gradient(
-90deg,
-#60a5fa,
-#a855f7,
-#06b6d4
-);
-
--webkit-background-clip:text;
--webkit-text-fill-color:transparent;
-
-margin-bottom:28px;
-}
-
-.hero p{
-
-font-size:24px;
-
-max-width:950px;
-
-margin:auto;
-
-line-height:1.9;
-
-color:#b8c1d9;
-}
-
-/* =========================================================
-# BUTTONS
-========================================================= */
-
-.hero-buttons{
-
-margin-top:50px;
-
-display:flex;
-justify-content:center;
-
-gap:22px;
-
-flex-wrap:wrap;
-}
-
-.primary-btn{
-
-background:
-linear-gradient(
-135deg,
-#2563eb,
-#a855f7
-);
-
-padding:18px 42px;
-
-border-radius:18px;
-
-font-weight:700;
-
-text-decoration:none;
 
-color:white;
-
-transition:.4s;
+.glow {
+    position: fixed;
+    width: 800px;
+    height: 800px;
+    background: radial-gradient(circle, rgba(168,85,247,.22), transparent 70%);
+    filter: blur(140px);
+    z-index: -1;
+    top: -250px;
+    left: -200px;
+    animation: float 12s ease infinite;
 }
-
-.primary-btn:hover{
 
-transform:translateY(-8px);
-
-box-shadow:
-0 0 50px rgba(99,102,241,.6);
+.glow2 {
+    position: fixed;
+    width: 700px;
+    height: 700px;
+    background: radial-gradient(circle, rgba(59,130,246,.18), transparent 70%);
+    filter: blur(140px);
+    z-index: -1;
+    bottom: -250px;
+    right: -200px;
+    animation: float2 14s ease infinite;
 }
-
-.secondary-btn{
-
-border:1px solid rgba(255,255,255,.1);
-
-padding:18px 42px;
-
-border-radius:18px;
-
-text-decoration:none;
 
-color:white;
-
-transition:.4s;
+@keyframes float {
+    0% { transform: translate(0,0); }
+    50% { transform: translate(120px,80px); }
+    100% { transform: translate(0,0); }
 }
-
-.secondary-btn:hover{
 
-background:rgba(255,255,255,.05);
-
-transform:translateY(-6px);
+@keyframes float2 {
+    0% { transform: translate(0,0); }
+    50% { transform: translate(-100px,-60px); }
+    100% { transform: translate(0,0); }
 }
-
-/* =========================================================
-# AI ORB
-========================================================= */
-
-.orb{
-
-position:relative;
-
-width:340px;
-height:340px;
-
-margin:80px auto;
 
-border-radius:50%;
-
-background:
-conic-gradient(
-from 0deg,
-#60a5fa,
-#a855f7,
-#06b6d4,
-#60a5fa
-);
-
-animation:
-spin 10s linear infinite,
-floatOrb 6s ease-in-out infinite;
-
-box-shadow:
-0 0 60px rgba(96,165,250,.5),
-0 0 120px rgba(168,85,247,.35),
-0 0 180px rgba(6,182,212,.25);
-
-overflow:hidden;
+.navbar {
+    position: sticky;
+    top: 0;
+    z-index: 999;
+    backdrop-filter: blur(18px);
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,.08);
+    padding: 18px 40px;
+    border-radius: 22px;
+    margin-bottom: 40px;
 }
-
-.orb::before{
-
-content:"";
-
-position:absolute;
-
-inset:20px;
 
-border-radius:50%;
-
-background:
-radial-gradient(circle at top,
-rgba(255,255,255,.35),
-rgba(255,255,255,.05),
-transparent 70%);
-
-filter:blur(12px);
-
-animation:
-pulse 4s ease infinite;
+.nav-flex {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
-
-.orb::after{
-
-content:"";
-
-position:absolute;
-
-inset:-18px;
-
-border-radius:50%;
 
-border:
-2px solid rgba(255,255,255,.12);
-
-animation:
-rotateRing 12s linear infinite;
-
-filter:blur(2px);
+.logo {
+    font-size: 32px;
+    font-weight: 900;
+    background: linear-gradient(90deg, #60a5fa, #a855f7, #06b6d4);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
 }
 
-@keyframes floatOrb{
-
-0%{
-transform:
-translateY(0px)
-rotate(0deg);
+.nav-links {
+    display: flex;
+    gap: 30px;
 }
 
-50%{
-transform:
-translateY(-20px)
-rotate(180deg);
+.nav-links a {
+    text-decoration: none;
+    color: #d1d5db;
+    transition: .3s;
+    font-weight: 500;
 }
 
-100%{
-transform:
-translateY(0px)
-rotate(360deg);
+.nav-links a:hover {
+    color: #60a5fa;
 }
 
+.hero {
+    padding-top: 110px;
+    padding-bottom: 80px;
+    text-align: center;
 }
-
-@keyframes spin{
 
-0%{
-filter:hue-rotate(0deg);
+.hero h1 {
+    font-size: 90px;
+    font-weight: 900;
+    line-height: 1.05;
+    background: linear-gradient(90deg, #60a5fa, #a855f7, #06b6d4);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 28px;
 }
 
-100%{
-filter:hue-rotate(360deg);
+.hero p {
+    font-size: 24px;
+    max-width: 950px;
+    margin: auto;
+    line-height: 1.9;
+    color: #b8c1d9;
 }
 
+.hero-buttons {
+    margin-top: 50px;
+    display: flex;
+    justify-content: center;
+    gap: 22px;
+    flex-wrap: wrap;
 }
 
-@keyframes pulse{
-
-0%{
-opacity:.6;
-transform:scale(1);
+.primary-btn, .secondary-btn {
+    display: inline-block;
+    text-decoration: none;
+    color: white;
+    border-radius: 18px;
+    padding: 18px 42px;
+    transition: .4s;
 }
 
-50%{
-opacity:1;
-transform:scale(1.05);
+.primary-btn {
+    background: linear-gradient(135deg, #2563eb, #a855f7);
+    font-weight: 700;
 }
 
-100%{
-opacity:.6;
-transform:scale(1);
+.primary-btn:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 0 50px rgba(99,102,241,.6);
 }
 
+.secondary-btn {
+    border: 1px solid rgba(255,255,255,.1);
 }
-
-@keyframes rotateRing{
 
-0%{
-transform:rotate(0deg);
+.secondary-btn:hover {
+    background: rgba(255,255,255,.05);
+    transform: translateY(-6px);
 }
 
-100%{
-transform:rotate(-360deg);
+.orb {
+    position: relative;
+    width: 340px;
+    height: 340px;
+    margin: 80px auto 40px auto;
+    border-radius: 50%;
+    background: conic-gradient(from 0deg, #60a5fa, #a855f7, #06b6d4, #60a5fa);
+    animation: spin 10s linear infinite, floatOrb 6s ease-in-out infinite;
+    box-shadow:
+        0 0 60px rgba(96,165,250,.5),
+        0 0 120px rgba(168,85,247,.35),
+        0 0 180px rgba(6,182,212,.25);
+    overflow: hidden;
 }
 
+.orb::before {
+    content: "";
+    position: absolute;
+    inset: 20px;
+    border-radius: 50%;
+    background: radial-gradient(circle at top, rgba(255,255,255,.35), rgba(255,255,255,.05), transparent 70%);
+    filter: blur(12px);
+    animation: pulse 4s ease infinite;
 }
 
-/* =========================================================
-# PARTICLES
-========================================================= */
-
-.particles{
-position:relative;
-width:0;
-height:0;
-margin:auto;
+.orb::after {
+    content: "";
+    position: absolute;
+    inset: -18px;
+    border-radius: 50%;
+    border: 2px solid rgba(255,255,255,.12);
+    animation: rotateRing 12s linear infinite;
+    filter: blur(2px);
 }
-
-.particle{
-position:absolute;
-width:10px;
-height:10px;
-border-radius:50%;
-background:#60a5fa;
 
-box-shadow:
-0 0 20px #60a5fa;
-
-animation:
-particleFloat 6s linear infinite;
+@keyframes floatOrb {
+    0% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(-20px) rotate(180deg); }
+    100% { transform: translateY(0px) rotate(360deg); }
 }
 
-.particle:nth-child(1){
-top:-180px;
-left:-120px;
-animation-delay:0s;
+@keyframes spin {
+    0% { filter: hue-rotate(0deg); }
+    100% { filter: hue-rotate(360deg); }
 }
 
-.particle:nth-child(2){
-top:-120px;
-left:140px;
-animation-delay:1s;
+@keyframes pulse {
+    0% { opacity:.6; transform:scale(1); }
+    50% { opacity:1; transform:scale(1.05); }
+    100% { opacity:.6; transform:scale(1); }
 }
 
-.particle:nth-child(3){
-top:80px;
-left:-160px;
-animation-delay:2s;
+@keyframes rotateRing {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(-360deg); }
 }
 
-.particle:nth-child(4){
-top:140px;
-left:120px;
-animation-delay:3s;
+.particles {
+    position: relative;
+    width: 0;
+    height: 0;
+    margin: auto;
 }
 
-.particle:nth-child(5){
-top:0px;
-left:200px;
-animation-delay:4s;
+.particle {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #60a5fa;
+    box-shadow: 0 0 20px #60a5fa;
+    animation: particleFloat 6s linear infinite;
 }
-
-@keyframes particleFloat{
 
-0%{
-transform:
-translateY(0px)
-scale(1);
-
-opacity:0;
-}
+.particle:nth-child(1) { top: -180px; left: -120px; animation-delay: 0s; }
+.particle:nth-child(2) { top: -120px; left: 140px; animation-delay: 1s; }
+.particle:nth-child(3) { top: 80px; left: -160px; animation-delay: 2s; }
+.particle:nth-child(4) { top: 140px; left: 120px; animation-delay: 3s; }
+.particle:nth-child(5) { top: 0px; left: 200px; animation-delay: 4s; }
 
-50%{
-opacity:1;
+@keyframes particleFloat {
+    0% { transform: translateY(0px) scale(1); opacity: 0; }
+    50% { opacity: 1; }
+    100% { transform: translateY(-40px) scale(1.5); opacity: 0; }
 }
 
-100%{
-transform:
-translateY(-40px)
-scale(1.5);
-
-opacity:0;
+.section-title {
+    font-size: 58px;
+    font-weight: 900;
+    text-align: center;
+    margin-top: 90px;
+    margin-bottom: 55px;
+    color: white;
 }
 
+.feature-card {
+    background: rgba(255,255,255,.05);
+    border: 1px solid rgba(255,255,255,.08);
+    backdrop-filter: blur(16px);
+    padding: 35px;
+    border-radius: 28px;
+    transition: .45s;
+    transform-style: preserve-3d;
+    min-height: 220px;
 }
-
-/* =========================================================
-# SECTION TITLES
-========================================================= */
-
-.section-title{
-
-font-size:58px;
-font-weight:900;
 
-text-align:center;
-
-margin-top:90px;
-margin-bottom:55px;
-
-color:white;
+.feature-card:hover {
+    transform: rotateX(8deg) rotateY(-8deg) translateY(-14px);
+    box-shadow: 0 0 50px rgba(99,102,241,.45);
 }
-
-/* =========================================================
-# FEATURES
-========================================================= */
-
-.feature-card{
-
-background:rgba(255,255,255,.05);
-
-border:1px solid rgba(255,255,255,.08);
-
-backdrop-filter:blur(16px);
-
-padding:35px;
 
-border-radius:28px;
-
-transition:.45s;
-
-transform-style:preserve-3d;
+.feature-card h3 {
+    font-size: 28px;
+    margin-bottom: 18px;
+    color: #60a5fa;
 }
-
-.feature-card:hover{
-
-transform:
-rotateX(8deg)
-rotateY(-8deg)
-translateY(-14px);
 
-box-shadow:
-0 0 50px rgba(99,102,241,.45);
+.feature-card p {
+    line-height: 1.9;
+    color: #d1d5db;
 }
 
-.feature-card h3{
-
-font-size:28px;
-
-margin-bottom:18px;
-
-color:#60a5fa;
+.terminal {
+    background: #020617;
+    border: 1px solid rgba(255,255,255,.08);
+    padding: 35px;
+    border-radius: 24px;
+    margin-top: 28px;
+    font-family: monospace;
+    color: #4ade80;
+    line-height: 2;
+    box-shadow: 0 0 40px rgba(6,182,212,.12);
 }
-
-.feature-card p{
 
-line-height:1.9;
-
-color:#d1d5db;
+.stat-box {
+    background: rgba(255,255,255,.05);
+    padding: 35px;
+    border-radius: 22px;
+    text-align: center;
+    border: 1px solid rgba(255,255,255,.08);
+    min-height: 160px;
 }
-
-/* =========================================================
-# TERMINAL
-========================================================= */
-
-.terminal{
-
-background:#020617;
-
-border:1px solid rgba(255,255,255,.08);
-
-padding:35px;
-
-border-radius:24px;
-
-margin-top:60px;
 
-font-family:monospace;
-
-color:#4ade80;
-
-line-height:2;
+.stat-box h2 {
+    font-size: 52px;
+    color: #60a5fa;
 }
 
-/* =========================================================
-# STATS
-========================================================= */
-
-.stat-box{
-background:rgba(255,255,255,.05);
-padding:35px;
-border-radius:22px;
-text-align:center;
-border:1px solid rgba(255,255,255,.08);
+.stat-box p {
+    color: #d1d5db;
 }
 
-.stat-box h2{
-font-size:52px;
-color:#60a5fa;
+.testimonial {
+    background: rgba(255,255,255,.04);
+    border: 1px solid rgba(255,255,255,.08);
+    padding: 35px;
+    border-radius: 24px;
+    margin-bottom: 25px;
 }
 
-.stat-box p{
-color:#d1d5db;
+.testimonial p {
+    line-height: 1.9;
+    color: #d1d5db;
 }
-
-/* =========================================================
-# TESTIMONIALS
-========================================================= */
 
-.testimonial{
-background:rgba(255,255,255,.04);
-border:1px solid rgba(255,255,255,.08);
-padding:35px;
-border-radius:24px;
-margin-bottom:25px;
+.testimonial h4 {
+    margin-top: 18px;
+    color: #60a5fa;
 }
 
-.testimonial p{
-line-height:1.9;
-color:#d1d5db;
+.launch-section {
+    margin-top: 120px;
 }
 
-.testimonial h4{
-margin-top:18px;
-color:#60a5fa;
+.launch-card {
+    display: flex;
+    gap: 40px;
+    align-items: center;
+    background: rgba(255,255,255,.04);
+    border: 1px solid rgba(255,255,255,.08);
+    padding: 50px;
+    border-radius: 32px;
+    backdrop-filter: blur(18px);
+    flex-wrap: wrap;
 }
 
-/* =========================================================
-# LAUNCH SECTION
-========================================================= */
-
-.launch-section{
-margin-top:120px;
+.launch-left {
+    flex: 1;
+    min-width: 300px;
 }
-
-.launch-card{
-
-display:flex;
-gap:40px;
-
-align-items:center;
 
-background:rgba(255,255,255,.04);
-
-border:1px solid rgba(255,255,255,.08);
-
-padding:50px;
-
-border-radius:32px;
-
-backdrop-filter:blur(18px);
-
-flex-wrap:wrap;
+.launch-left h3 {
+    font-size: 42px;
+    margin-bottom: 20px;
+    color: white;
 }
 
-.launch-left{
-flex:1;
-min-width:300px;
+.launch-left p {
+    line-height: 1.9;
+    color: #d1d5db;
+    margin-bottom: 25px;
 }
-
-.launch-left h3{
 
-font-size:42px;
-margin-bottom:20px;
-
-color:white;
+.launch-left ul {
+    line-height: 2.2;
+    color: #d1d5db;
+    margin-bottom: 30px;
 }
-
-.launch-left p{
 
-line-height:1.9;
-color:#d1d5db;
-
-margin-bottom:25px;
+.browser-window {
+    flex: 1;
+    min-width: 320px;
+    background: #020617;
+    border-radius: 24px;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,.08);
+    box-shadow: 0 0 50px rgba(99,102,241,.3);
+    animation: floatWindow 6s ease infinite;
 }
 
-.launch-left ul{
-line-height:2.2;
-color:#d1d5db;
-margin-bottom:30px;
+.browser-top {
+    display: flex;
+    gap: 10px;
+    padding: 16px;
+    background: #111827;
 }
-
-/* =========================================================
-# BROWSER WINDOW
-========================================================= */
-
-.browser-window{
-
-flex:1;
-
-min-width:320px;
-
-background:#020617;
-
-border-radius:24px;
-
-overflow:hidden;
 
-border:1px solid rgba(255,255,255,.08);
-
-box-shadow:
-0 0 50px rgba(99,102,241,.3);
-
-animation:floatWindow 6s ease infinite;
+.dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
 }
-
-.browser-top{
-
-display:flex;
-gap:10px;
 
-padding:16px;
+.red { background: #ef4444; }
+.yellow { background: #facc15; }
+.green { background: #22c55e; }
 
-background:#111827;
+.browser-content {
+    padding: 35px;
+    font-family: monospace;
+    line-height: 2.2;
+    color: #4ade80;
 }
 
-.dot{
-width:12px;
-height:12px;
-border-radius:50%;
+@keyframes floatWindow {
+    0% { transform: translateY(0px); }
+    50% { transform: translateY(-12px); }
+    100% { transform: translateY(0px); }
 }
 
-.red{
-background:#ef4444;
+.demo-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px,1fr));
+    gap: 28px;
+    margin-top: 28px;
 }
 
-.yellow{
-background:#facc15;
+.demo-card {
+    background: rgba(255,255,255,.04);
+    border: 1px solid rgba(255,255,255,.08);
+    padding: 35px;
+    border-radius: 28px;
+    transition: .4s;
 }
-
-.green{
-background:#22c55e;
-}
-
-.browser-content{
-
-padding:35px;
 
-font-family:monospace;
-
-line-height:2.2;
-
-color:#4ade80;
+.demo-card:hover {
+    transform: translateY(-10px) scale(1.02);
+    box-shadow: 0 0 40px rgba(99,102,241,.35);
 }
 
-@keyframes floatWindow{
-
-0%{
-transform:translateY(0px);
+.demo-card h3 {
+    font-size: 28px;
+    margin-bottom: 18px;
+    color: #60a5fa;
 }
 
-50%{
-transform:translateY(-12px);
+.demo-card p {
+    line-height: 1.9;
+    color: #d1d5db;
 }
 
-100%{
-transform:translateY(0px);
+.footer {
+    margin-top: 120px;
+    padding: 60px;
+    text-align: center;
+    color: #9ca3af;
 }
 
+.sidebar-card {
+    background: rgba(255,255,255,.04);
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 24px;
+    padding: 22px;
+    margin-bottom: 18px;
 }
-
-/* =========================================================
-# DEMO SECTION
-========================================================= */
-
-.demo-grid{
-
-display:grid;
-
-grid-template-columns:
-repeat(auto-fit,minmax(280px,1fr));
-
-gap:28px;
 
-margin-top:50px;
+.small-kicker {
+    text-transform: uppercase;
+    letter-spacing: .18em;
+    font-size: 12px;
+    color: #94a3b8;
+    margin-bottom: 10px;
 }
 
-.demo-card{
-
-background:rgba(255,255,255,.04);
-
-border:1px solid rgba(255,255,255,.08);
-
-padding:35px;
-
-border-radius:28px;
-
-transition:.4s;
+.command-pill {
+    display: inline-block;
+    border: 1px solid rgba(255,255,255,.12);
+    border-radius: 999px;
+    padding: 8px 14px;
+    margin: 4px 6px 0 0;
+    color: #cbd5e1;
+    font-size: 13px;
+    background: rgba(255,255,255,.04);
 }
-
-.demo-card:hover{
 
-transform:
-translateY(-10px)
-scale(1.02);
-
-box-shadow:
-0 0 40px rgba(99,102,241,.35);
+.workflow-step {
+    border-left: 2px solid rgba(96,165,250,.35);
+    padding-left: 14px;
+    margin-bottom: 14px;
 }
-
-.demo-card h3{
 
-font-size:28px;
-
-margin-bottom:18px;
-
-color:#60a5fa;
+.mini-panel {
+    background: rgba(255,255,255,.04);
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 24px;
+    padding: 20px;
 }
-
-.demo-card p{
-
-line-height:1.9;
 
-color:#d1d5db;
+.holo-window {
+    background:
+        radial-gradient(circle at top left, rgba(96,165,250,.20), transparent 35%),
+        radial-gradient(circle at bottom right, rgba(168,85,247,.18), transparent 35%),
+        rgba(2,6,23,.85);
+    border: 1px solid rgba(255,255,255,.1);
+    border-radius: 28px;
+    padding: 24px;
+    min-height: 240px;
+    box-shadow: 0 0 60px rgba(59,130,246,.15);
 }
 
-/* =========================================================
-# FOOTER
-========================================================= */
-
-.footer{
-margin-top:120px;
-padding:60px;
-text-align:center;
-color:#9ca3af;
+.holo-title {
+    font-size: 22px;
+    font-weight: 800;
+    margin-bottom: 12px;
 }
-
-/* =========================================================
-# RESPONSIVE
-========================================================= */
 
-@media(max-width:768px){
-
-.hero h1{
-font-size:54px;
+.holo-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
 }
 
-.hero p{
-font-size:18px;
+.holo-chip {
+    background: rgba(255,255,255,.05);
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 18px;
+    padding: 14px 16px;
 }
 
-.section-title{
-font-size:42px;
+.fake-meter {
+    height: 10px;
+    border-radius: 999px;
+    background: rgba(255,255,255,.08);
+    overflow: hidden;
 }
 
-.nav-links{
-display:none;
+.fake-meter > div {
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #60a5fa, #a855f7, #06b6d4);
 }
 
+@media(max-width: 768px) {
+    .hero h1 { font-size: 54px; }
+    .hero p { font-size: 18px; }
+    .section-title { font-size: 42px; }
+    .nav-links { display: none; }
+    .launch-card { padding: 24px; }
+    .nav-flex { gap: 14px; }
 }
-
 </style>
 """, unsafe_allow_html=True)
 
@@ -980,309 +855,598 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # =========================================================
+# SIDEBAR COMMAND CENTER
+# =========================================================
+
+with st.sidebar:
+    st.markdown("## 🚀 Ghildiyal AI Command Center")
+    st.caption("Your browser companion, research engine, and automation console.")
+    st.markdown("### Quick Modes")
+    mode = st.radio(
+        "Choose a mode",
+        ["Browse", "Research", "Compare", "Summarize", "Automate", "Memory"],
+        index=0,
+        horizontal=False,
+        key="sidebar_mode",
+    )
+    st.session_state.selected_mode = mode
+
+    st.markdown("### Fast Commands")
+    st.markdown('<span class="command-pill">Search the web</span>', unsafe_allow_html=True)
+    st.markdown('<span class="command-pill">Open a URL</span>', unsafe_allow_html=True)
+    st.markdown('<span class="command-pill">Summarize tabs</span>', unsafe_allow_html=True)
+    st.markdown('<span class="command-pill">Save memory</span>', unsafe_allow_html=True)
+    st.markdown('<span class="command-pill">Run agent</span>', unsafe_allow_html=True)
+
+    st.markdown("### Memory Vault")
+    memory_note = st.text_area("Save a note", placeholder="Remember this workflow...", height=110)
+    if st.button("Save to memory", use_container_width=True):
+        add_memory(memory_note)
+        add_log("Saved a new memory item.")
+        st.success("Saved.")
+
+    st.markdown("### Voice Input (demo)")
+    st.text_input("Voice command", key="voice_text")
+    if st.button("Interpret voice", use_container_width=True):
+        st.info(browser_command(st.session_state.voice_text))
+        add_log(f"Voice command interpreted: {st.session_state.voice_text}")
+
+# =========================================================
 # NAVBAR
 # =========================================================
 
 st.markdown("""
 <div class="navbar">
-
-<div class="nav-flex">
-
-<div class="logo">
-🚀 Fellou AI
-</div>
-
-<div class="nav-links">
-<a href="#launch">Launch</a>
-<a href="#demo">Demo</a>
-<a href="#features">Features</a>
-<a href="#research">Research</a>
-<a href="#pricing">Pricing</a>
-</div>
-
-</div>
-
+  <div class="nav-flex">
+    <div class="logo">🚀Ghildiyal AI</div>
+    <div class="nav-links">
+      <a href="#launch">Launch</a>
+      <a href="#demo">Demo</a>
+      <a href="#features">Features</a>
+      <a href="#research">Research</a>
+      <a href="#pricing">Pricing</a>
+    </div>
+  </div>
 </div>
 """, unsafe_allow_html=True)
 
 # =========================================================
-#HERO
+# HERO
 # =========================================================
 
 st.markdown("""
 <div class="hero">
-
-<h1>
-The Future of Autonomous Browsing
-</h1>
-
-<p>
-An AI-native browser that researches, automates workflows,
-controls apps, reasons across tabs,
-and executes complex tasks autonomously.
-</p>
-
-<div class="hero-buttons">
-
-<a class="primary-btn" href="#launch">
-Launch AI Browser
-</a>
-
-<a class="secondary-btn" href="#demo">
-Watch Live Demo
-</a>
-
-</div>
-
-<div class="orb"></div>
-
-<div class="particles">
-
-<div class="particle"></div>
-<div class="particle"></div>
-<div class="particle"></div>
-<div class="particle"></div>
-<div class="particle"></div>
-
-</div>
-
+  <h1>The Future of Autonomous Browsing</h1>
+  <p>
+    A cinematic AI-native browser that researches, automates workflows,
+    controls apps, reasons across tabs, and executes complex tasks like a true
+    browser operating system.
+  </p>
+  <div class="hero-buttons">
+    <a class="primary-btn" href="#launch">Launch AI Browser</a>
+    <a class="secondary-btn" href="#demo">Watch Live Demo</a>
+  </div>
+  <div class="orb"></div>
+  <div class="particles">
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+  </div>
 </div>
 """, unsafe_allow_html=True)
 
 # =========================================================
-# LAUNCH SECTION
+# TOP CONTROL STRIP
 # =========================================================
 
-st.markdown("""
+st.markdown("---")
+left, center, right = st.columns([1.2, 1.8, 1.2])
 
-<div id="launch" class="launch-section">
+with left:
+    st.markdown("### ⚙️ Browser Command")
+    st.session_state.command_text = st.text_input(
+        "Ask the browser to do something",
+        value=st.session_state.command_text,
+        label_visibility="collapsed",
+    )
+    if st.button("Execute command", use_container_width=True):
+        response = browser_command(st.session_state.command_text)
+        st.session_state.task_status = response
+        add_log(response)
+        st.success(response)
 
-<h2 class="section-title">
-🚀 Launch Autonomous Browser
-</h2>
+with center:
+    st.markdown("### 🔎 Search + Open")
+    col_a, col_b = st.columns([1.2, 0.8])
+    with col_a:
+        st.session_state.search_query = st.text_input(
+            "Search query",
+            value=st.session_state.search_query,
+            placeholder="Search AI browsers, products, docs...",
+            label_visibility="collapsed",
+        )
+    with col_b:
+        if st.button("Search web", use_container_width=True):
+            st.session_state.task_status = "Searching the web..."
+            add_log(f"Searched: {st.session_state.search_query}")
+    st.markdown("### 🌐 Open URL")
+    st.session_state.browser_url = st.text_input(
+        "URL",
+        value=st.session_state.browser_url,
+        placeholder="https://example.com",
+        label_visibility="collapsed",
+    )
 
-<div class="launch-card">
-
-<div class="launch-left">
-
-<h3>
-AI Browser Control Center
-</h3>
-
-<p>
-Operate autonomous AI agents that browse,
-research, compare, summarize,
-and automate workflows in real-time.
-</p>
-
-<ul>
-<li>✔ Multi-tab AI reasoning</li>
-<li>✔ Autonomous workflows</li>
-<li>✔ Deep internet research</li>
-<li>✔ AI memory engine</li>
-<li>✔ Live browser control</li>
-</ul>
-
-<a class="primary-btn" href="#">
-Start AI Session
-</a>
-
-</div>
-
-<div class="launch-right">
-
-<div class="browser-window">
-
-<div class="browser-top">
-<div class="dot red"></div>
-<div class="dot yellow"></div>
-<div class="dot green"></div>
-</div>
-
-<div class="browser-content">
-
-<p>> Opening 12 websites...</p>
-<p>> Comparing AI models...</p>
-<p>> Extracting market data...</p>
-<p>> Generating insights...</p>
-<p>> Workflow completed.</p>
-
-</div>
-
-</div>
-
-</div>
-
-</div>
-
-</div>
-
-""", unsafe_allow_html=True)
+with right:
+    st.markdown("### 🎛 Live Status")
+    st.markdown(
+        f"""
+        <div class="mini-panel">
+            <div class="small-kicker">Mode</div>
+            <div style="font-size:22px;font-weight:800;">{st.session_state.selected_mode}</div>
+            <div class="small-kicker" style="margin-top:14px;">State</div>
+            <div style="font-size:18px;color:#cbd5e1;">{st.session_state.task_status}</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
 # =========================================================
-# LIVE DEMO SECTION
+# REAL FUNCTIONAL PANELS
 # =========================================================
 
-st.markdown("""
+st.markdown('<div id="launch"></div>', unsafe_allow_html=True)
+st.markdown("## 🚀 Launch Autonomous Browser")
 
-<div id="demo">
+launch_col1, launch_col2 = st.columns([1.05, 1])
 
-<h2 class="section-title">
-🎥 Live AI Demonstration
-</h2>
+with launch_col1:
+    st.markdown(
+        """
+        <div class="launch-card">
+            <div class="launch-left">
+                <h3>AI Browser Control Center</h3>
+                <p>
+                    Operate autonomous AI agents that browse, research, compare,
+                    summarize, and automate workflows in real-time.
+                </p>
+                <ul>
+                    <li>✔ Multi-tab AI reasoning</li>
+                    <li>✔ Autonomous workflows</li>
+                    <li>✔ Deep internet research</li>
+                    <li>✔ AI memory engine</li>
+                    <li>✔ Live browser control</li>
+                </ul>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    st.markdown("### Start Session")
+    session_name = st.text_input("Session name", value="Ghildiyal Session")
+    start_col1, start_col2, start_col3 = st.columns(3)
+    with start_col1:
+        if st.button("Browse", use_container_width=True):
+            st.session_state.selected_mode = "Browse"
+            st.session_state.task_status = "Browse session started."
+            add_log("Browse session launched.")
+    with start_col2:
+        if st.button("Research", use_container_width=True):
+            st.session_state.selected_mode = "Research"
+            st.session_state.task_status = "Research session started."
+            add_log("Research session launched.")
+    with start_col3:
+        if st.button("Automate", use_container_width=True):
+            st.session_state.selected_mode = "Automate"
+            st.session_state.task_status = "Automation session started."
+            add_log("Automation session launched.")
 
-<div class="demo-grid">
+    st.markdown("### Upload a file for AI reading")
+    upload = st.file_uploader("Upload PDF / text / image", type=None)
+    if upload is not None:
+        st.session_state.file_notes = f"Uploaded: {upload.name} ({upload.type})"
+        add_log(f"File uploaded: {upload.name}")
+        st.success(st.session_state.file_notes)
 
-<div class="demo-card">
-
-<h3>AI Research Mode</h3>
-
-<p>
-The AI independently searches the internet,
-compares sources,
-and generates structured reports.
-</p>
-
-</div>
-
-<div class="demo-card">
-
-<h3>Autonomous Shopping</h3>
-
-<p>
-AI agents compare products,
-analyze reviews,
-and recommend best choices instantly.
-</p>
-
-</div>
-
-<div class="demo-card">
-
-<h3>Workflow Automation</h3>
-
-<p>
-Execute repetitive workflows automatically
-across multiple websites and apps.
-</p>
-
-</div>
-
-</div>
-
-</div>
-
-""", unsafe_allow_html=True)
+with launch_col2:
+    st.markdown(
+        """
+        <div class="browser-window">
+            <div class="browser-top">
+                <div class="dot red"></div>
+                <div class="dot yellow"></div>
+                <div class="dot green"></div>
+            </div>
+            <div class="browser-content">
+                <p>> Opening 12 websites...</p>
+                <p>> Comparing AI models...</p>
+                <p>> Extracting market data...</p>
+                <p>> Generating insights...</p>
+                <p>> Workflow completed.</p>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    st.markdown("### Browser URL Analyzer")
+    if st.button("Fetch page info", use_container_width=True):
+        if st.session_state.browser_url.startswith(("http://", "https://")):
+            with st.spinner("Inspecting page..."):
+                info = fetch_url_info(st.session_state.browser_url)
+            if info["error"]:
+                st.warning(info["error"])
+            else:
+                st.success(info["title"])
+                st.code(info["content"][:1500])
+                add_log(f"Analyzed URL: {st.session_state.browser_url}")
+        else:
+            st.error("Use a valid URL starting with http:// or https://")
 
 # =========================================================
-# AI TERMINAL
+# AI CHAT + SEARCH + BROWSER COMMANDS
 # =========================================================
 
-st.markdown("""
-<h2 class="section-title">
-🧠 AI Workflow Simulation
-</h2>
-""", unsafe_allow_html=True)
+st.markdown("---")
+chat_col1, chat_col2 = st.columns([1.05, 1])
 
-st.markdown("""
-<div class="terminal">
+with chat_col1:
+    st.markdown("## 💬 AI Browser Chat")
+    st.caption("Ask for summaries, plans, research, or browser steps.")
+    chat_prompt = st.text_area(
+        "Message",
+        placeholder="Summarize this site, compare two products, or plan a workflow...",
+        height=120,
+    )
+    c1, c2 = st.columns([0.7, 0.3])
+    with c1:
+        if st.button("Send to AI", use_container_width=True):
+            if chat_prompt.strip():
+                st.session_state.chat_history.append({"role": "user", "content": chat_prompt.strip()})
+                reply = safe_llm_answer(chat_prompt.strip())
+                st.session_state.chat_history.append({"role": "assistant", "content": reply})
+                add_log("AI chat response generated.")
+    with c2:
+        if st.button("Save msg", use_container_width=True):
+            if chat_prompt.strip():
+                add_memory(chat_prompt.strip())
+                st.success("Saved.")
 
-> Initializing autonomous agents...<br>
-> Opening 14 research sources...<br>
-> Comparing multiple products...<br>
-> Analyzing market trends...<br>
-> Generating structured report...<br>
-> Executing browser workflows...<br>
-> Task completed successfully.
+    st.markdown("### Conversation")
+    for msg in st.session_state.chat_history[-8:]:
+        if msg["role"] == "user":
+            st.markdown(f"**You:** {msg['content']}")
+        else:
+            st.markdown(f"**AI:** {msg['content']}")
 
-</div>
-""", unsafe_allow_html=True)
+with chat_col2:
+    st.markdown("## 🔎 Web Search Engine")
+    st.caption("Tavily / Serper supported. Demo fallback included.")
+    search_term = st.text_input("Search the web", value=st.session_state.search_query, key="search_input")
+    if st.button("Run search", use_container_width=True):
+        if search_term.strip():
+            st.session_state.search_query = search_term.strip()
+            st.session_state.task_status = "Search completed."
+            add_log(f"Search run: {search_term}")
+    if st.session_state.search_query.strip():
+        results = web_search(st.session_state.search_query.strip())
+        for result in results:
+            st.markdown(
+                f"""
+                <div class="sidebar-card">
+                    <div class="small-kicker">{result['source']}</div>
+                    <div style="font-size:18px;font-weight:800;">{result['title']}</div>
+                    <div style="color:#cbd5e1;margin-top:8px;">{result['snippet']}</div>
+                    <div style="margin-top:8px;color:#93c5fd;">{result['link']}</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+# =========================================================
+# DEMO SECTION
+# =========================================================
+
+st.markdown('<div id="demo"></div>', unsafe_allow_html=True)
+st.markdown("## 🎥 Live AI Demonstration")
+
+demo_cards = st.columns(3)
+demo_data = [
+    ("AI Research Mode", "Searches the internet, compares sources, and builds structured reports."),
+    ("Autonomous Shopping", "Compares products, analyzes reviews, and recommends the best options."),
+    ("Workflow Automation", "Executes repetitive browser steps across multiple websites and apps."),
+]
+for col, (title, desc) in zip(demo_cards, demo_data):
+    with col:
+        st.markdown(f"""
+        <div class="demo-card">
+            <h3>{title}</h3>
+            <p>{desc}</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+st.markdown("### AI Workflow Simulation")
+steps = fake_status_steps()
+progress = st.slider("Simulation speed", 1, 10, 4)
+if st.button("Run workflow simulation", use_container_width=True):
+    for i, step in enumerate(steps):
+        st.session_state.task_status = step
+        st.session_state.demo_progress = int((i + 1) / len(steps) * 100)
+        add_log(step)
+        time.sleep(max(0.03, 0.10 - progress * 0.006))
+    st.success("Workflow simulation completed.")
+
+st.markdown(
+    f"""
+    <div class="terminal">
+        > {steps[0]}<br>
+        > {steps[1]}<br>
+        > {steps[2]}<br>
+        > {steps[3]}<br>
+        > {steps[4]}<br>
+        > {steps[5]}<br>
+        > {steps[6]}
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
+
+st.progress(st.session_state.demo_progress / 100.0)
 
 # =========================================================
 # FEATURES
 # =========================================================
 
-st.markdown("""
-<div id="features">
-
-<h2 class="section-title">
-⚡ Next-Gen AI Features
-</h2>
-
-</div>
-""", unsafe_allow_html=True)
+st.markdown('<div id="features"></div>', unsafe_allow_html=True)
+st.markdown("## ⚡ Next-Gen AI Features")
 
 features = [
-
-("Autonomous Web Agents",
-"AI agents independently execute workflows across websites and apps."),
-
-("Multi-Tab Intelligence",
-"AI understands context across multiple tabs simultaneously."),
-
-("Deep Research Engine",
-"Conduct in-depth research from dozens of online sources automatically."),
-
-("AI Workspace Memory",
-"Adaptive memory system learns your workflow preferences over time."),
-
-("Real-Time Workflow Monitoring",
-"Watch every AI action step-by-step and intervene anytime."),
-
-("Voice Command Navigation",
-"Control browser workflows naturally using voice commands.")
+    ("Autonomous Web Agents", "AI agents independently execute workflows across websites and apps."),
+    ("Multi-Tab Intelligence", "AI understands context across multiple tabs simultaneously."),
+    ("Deep Research Engine", "Conduct in-depth research from dozens of online sources automatically."),
+    ("AI Workspace Memory", "Adaptive memory learns your workflow preferences over time."),
+    ("Real-Time Workflow Monitoring", "Watch every AI action step-by-step and intervene anytime."),
+    ("Voice Command Navigation", "Control browser workflows naturally using voice commands."),
+    ("Contextual AI Actions", "The browser anticipates what to do next."),
+    ("Cross-App Automation", "Connect desktop apps and web apps in one workflow."),
+    ("Secure Approval Layer", "Keep human approval on sensitive actions."),
+    ("Live Knowledge Cards", "Generate dynamic research cards from the current task."),
+    ("Tab Summaries", "Condense multiple sources into a single decision view."),
+    ("Workspace Memory Vault", "Store notes, prompts, and reusable workflows."),
 ]
 
-for i in range(0, len(features), 3):
+feature_cols = st.columns(3)
+for idx, (title, desc) in enumerate(features):
+    with feature_cols[idx % 3]:
+        st.markdown(f"""
+        <div class="feature-card">
+            <h3>{title}</h3>
+            <p>{desc}</p>
+        </div>
+        """, unsafe_allow_html=True)
 
-    cols = st.columns(3)
+# =========================================================
+# REAL AI BROWSER WORKSPACE
+# =========================================================
 
-    for j in range(3):
+st.markdown("## 🧭 AI Browser Workspace")
+workspace_col1, workspace_col2 = st.columns([1.05, 1])
 
-        if i+j < len(features):
+with workspace_col1:
+    st.markdown("### Browser Intelligence Panel")
+    tabs = st.tabs(["Research", "Agent", "Memory", "Logs", "Controls"])
 
-            with cols[j]:
+    with tabs[0]:
+        research_q = st.text_input("Research topic", placeholder="Top 10 AI browsers and why they matter")
+        if st.button("Create research brief", use_container_width=True):
+            if research_q.strip():
+                brief = build_research_summary(research_q.strip())
+                st.markdown(brief)
+                add_log(f"Research brief created: {research_q}")
 
-                st.markdown(f"""
-                <div class="feature-card">
+    with tabs[1]:
+        agent_goal = st.text_area("Agent goal", placeholder="Plan a trip, compare products, or draft a report", height=110)
+        if st.button("Run agent plan", use_container_width=True):
+            if agent_goal.strip():
+                response = safe_llm_answer(
+                    "Create a step-by-step agent plan for this task:\n\n" + agent_goal.strip()
+                )
+                st.markdown(response)
+                add_log("Agent plan created.")
 
-                <h3>{features[i+j][0]}</h3>
+    with tabs[2]:
+        st.markdown("#### Memory Vault")
+        if st.session_state.memory_items:
+            for item in st.session_state.memory_items:
+                st.markdown(
+                    f"""
+                    <div class="sidebar-card">
+                        <div class="small-kicker">{item['ts']}</div>
+                        <div style="color:#e2e8f0;">{item['note']}</div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+        else:
+            st.info("No memory saved yet.")
 
-                <p>{features[i+j][1]}</p>
+    with tabs[3]:
+        st.markdown("#### Activity Log")
+        if st.session_state.workflow_log:
+            for entry in st.session_state.workflow_log:
+                st.code(entry)
+        else:
+            st.caption("No activity yet.")
 
+    with tabs[4]:
+        st.markdown("#### Browser Controls")
+        control_col1, control_col2, control_col3 = st.columns(3)
+        with control_col1:
+            if st.button("Browse mode", use_container_width=True):
+                st.session_state.selected_mode = "Browse"
+                st.session_state.task_status = "Browse mode active."
+                add_log("Switched to browse mode.")
+        with control_col2:
+            if st.button("Research mode", use_container_width=True):
+                st.session_state.selected_mode = "Research"
+                st.session_state.task_status = "Research mode active."
+                add_log("Switched to research mode.")
+        with control_col3:
+            if st.button("Automate mode", use_container_width=True):
+                st.session_state.selected_mode = "Automate"
+                st.session_state.task_status = "Automation mode active."
+                add_log("Switched to automate mode.")
+
+        st.markdown("#### Quick chips")
+        st.markdown('<span class="command-pill">Open tabs</span>', unsafe_allow_html=True)
+        st.markdown('<span class="command-pill">Compare pages</span>', unsafe_allow_html=True)
+        st.markdown('<span class="command-pill">Summarize results</span>', unsafe_allow_html=True)
+        st.markdown('<span class="command-pill">Store notes</span>', unsafe_allow_html=True)
+
+with workspace_col2:
+    st.markdown("### 3D Holographic Browser Card")
+    st.markdown(
+        """
+        <div class="holo-window">
+            <div class="holo-title">Live Browser Matrix</div>
+            <div class="holo-row">
+                <div class="holo-chip">
+                    <div class="small-kicker">Focus</div>
+                    <div style="font-size:22px;font-weight:800;">Autonomous context</div>
                 </div>
-                """, unsafe_allow_html=True)
+                <div class="holo-chip">
+                    <div class="small-kicker">State</div>
+                    <div style="font-size:22px;font-weight:800;">Active</div>
+                </div>
+            </div>
+            <div style="height:18px"></div>
+            <div class="holo-chip">
+                <div class="small-kicker">Current command</div>
+                <div style="font-size:18px;">The AI browser is interpreting your task into actions.</div>
+            </div>
+            <div style="height:18px"></div>
+            <div class="fake-meter"><div style="width: 76%;"></div></div>
+            <div style="display:flex;justify-content:space-between;margin-top:10px;color:#cbd5e1;font-size:13px;">
+                <span>Reasoning</span>
+                <span>76%</span>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    st.markdown("### Real action simulation")
+    if st.button("Plan next action", use_container_width=True):
+        action = safe_llm_answer(
+            "Give the next browser action for this task: "
+            + st.session_state.command_text
+        )
+        st.success(action)
+        add_log("Planned the next action.")
+
+# =========================================================
+# AI AGENT + BROWSER AUTOMATION
+# =========================================================
+
+st.markdown("---")
+st.markdown("## 🤖 AI Agent + Browser Automation")
+
+col1, col2 = st.columns([1, 1])
+
+with col1:
+    st.markdown("### Open a URL")
+    url_to_open = st.text_input("Enter a URL", value=st.session_state.browser_url, key="url_open")
+    if st.button("Inspect URL", use_container_width=True):
+        if url_to_open.startswith(("http://", "https://")):
+            with st.spinner("Inspecting page..."):
+                info = fetch_url_info(url_to_open)
+            if info["error"]:
+                st.warning(info["error"])
+            else:
+                st.success(info["title"])
+                st.text(info["content"][:1200] if info["content"] else "No visible text found.")
+                add_log(f"Inspected URL: {url_to_open}")
+        else:
+            st.error("Enter a valid URL starting with http:// or https://")
+
+with col2:
+    st.markdown("### Agent Simulation")
+    agent_instruction = st.text_area(
+        "Describe an autonomous browser task",
+        placeholder="Example: Research the best AI browsers and make a comparison table.",
+        height=130,
+    )
+    if st.button("Run autonomous agent", use_container_width=True):
+        if agent_instruction.strip():
+            result = safe_llm_answer(
+                "You are an autonomous browser agent. Create an action plan for:\n\n"
+                + agent_instruction.strip()
+            )
+            st.markdown(result)
+            add_log("Autonomous agent run completed.")
+
+# =========================================================
+# MULTI-TAB REASONING
+# =========================================================
+
+st.markdown("## 🧠 Multi-Tab Reasoning")
+tab_input = st.text_area(
+    "Paste multiple URLs, one per line",
+    placeholder="https://example.com\nhttps://example.org",
+    height=110,
+)
+if st.button("Summarize tabs", use_container_width=True):
+    urls = [x.strip() for x in tab_input.splitlines() if x.strip()]
+    if urls:
+        combined = []
+        for u in urls[:4]:
+            fetched = fetch_url_info(u)
+            snippet = fetched["content"][:900] if fetched["content"] else ""
+            combined.append({"url": u, "title": fetched["title"], "snippet": snippet})
+        prompt = "Summarize these tabs and compare them:\n" + json.dumps(combined, indent=2)
+        summary = safe_llm_answer(prompt)
+        st.markdown(summary)
+        add_log("Tabs summarized.")
+
+# =========================================================
+# RESEARCH CARD GRID
+# =========================================================
+
+st.markdown("## 🔬 Research Cards")
+research_cols = st.columns(3)
+cards = [
+    ("Deep Search", "Search the web, cluster sources, and surface evidence."),
+    ("Browser Memory", "Save user intent, notes, and repeatable workflows."),
+    ("Command Layer", "Convert prompts into actions and next steps."),
+]
+for col, (title, desc) in zip(research_cols, cards):
+    with col:
+        st.markdown(f"""
+        <div class="feature-card">
+            <h3>{title}</h3>
+            <p>{desc}</p>
+        </div>
+        """, unsafe_allow_html=True)
 
 # =========================================================
 # STATS
 # =========================================================
 
-st.markdown("""
-<h2 class="section-title">
-📊 Trusted Worldwide
-</h2>
-""", unsafe_allow_html=True)
-
+st.markdown("## 📊 Trusted Worldwide")
 stats = [
-("10M+","Tasks Automated"),
-("150+","AI Integrations"),
-("99.9%","Uptime"),
-("4.9★","User Rating")
+    ("10M+", "Tasks Automated"),
+    ("150+", "AI Integrations"),
+    ("99.9%", "Uptime"),
+    ("4.9★", "User Rating"),
 ]
-
-cols = st.columns(4)
-
-for i, stat in enumerate(stats):
-
-    with cols[i]:
-
+stat_cols = st.columns(4)
+for col, stat in zip(stat_cols, stats):
+    with col:
         st.markdown(f"""
         <div class="stat-box">
-
-        <h2>{stat[0]}</h2>
-
-        <p>{stat[1]}</p>
-
+            <h2>{stat[0]}</h2>
+            <p>{stat[1]}</p>
         </div>
         """, unsafe_allow_html=True)
 
@@ -1290,30 +1454,17 @@ for i, stat in enumerate(stats):
 # TESTIMONIALS
 # =========================================================
 
-st.markdown("""
-<h2 class="section-title">
-💬 Stories That Inspire
-</h2>
-""", unsafe_allow_html=True)
-
+st.markdown("## 💬 Stories That Inspire")
 testimonials = [
-
-("“This feels like Jarvis for the internet.”","— MARLON"),
-
-("“The most futuristic browser experience I've ever seen.”","— Guri Saroy"),
-
-("“Deep research and automation are insanely powerful.”","— Felipe")
+    ("“This feels like Jarvis for the internet.”", "— MARLON"),
+    ("“The most futuristic browser experience I've ever seen.”", "— Guri Saroy"),
+    ("“Deep research and automation are insanely powerful.”", "— Felipe"),
 ]
-
-for t in testimonials:
-
+for quote, author in testimonials:
     st.markdown(f"""
     <div class="testimonial">
-
-    <p>{t[0]}</p>
-
-    <h4>{t[1]}</h4>
-
+      <p>{quote}</p>
+      <h4>{author}</h4>
     </div>
     """, unsafe_allow_html=True)
 
@@ -1321,29 +1472,20 @@ for t in testimonials:
 # FAQ
 # =========================================================
 
-st.markdown("""
-<h2 class="section-title">
-❓ Frequently Asked Questions
-</h2>
-""", unsafe_allow_html=True)
+st.markdown("## ❓ Frequently Asked Questions")
 
 faq = {
-
-"Can AI automate apps and websites?":
-"Yes. Fellou AI autonomously executes workflows across websites and desktop apps.",
-
-"Can I monitor AI actions in real-time?":
-"Yes. Every AI step is visible and controllable.",
-
-"Does it support deep research?":
-"Yes. The AI analyzes information from multiple sources simultaneously.",
-
-"Does it work with local files?":
-"Absolutely. AI can manage and operate local desktop files."
+    "Can AI automate apps and websites?":
+        "Yes.Ghildiyal AI can automate workflows across websites and desktop apps.",
+    "Can I monitor AI actions in real-time?":
+        "Yes. Every AI step is visible and controllable.",
+    "Does it support deep research?":
+        "Yes. The assistant can analyze information from multiple sources.",
+    "Does it work with local files?":
+        "Yes. The interface includes file upload and memory tools.",
 }
 
 for q, a in faq.items():
-
     with st.expander(q):
         st.write(a)
 
@@ -1351,23 +1493,38 @@ for q, a in faq.items():
 # MISSION
 # =========================================================
 
-st.markdown("""
-<h2 class="section-title">
-🚀 Our Mission
-</h2>
+st.markdown("## 🚀 Our Mission")
+st.markdown(
+    """
+    <div class="feature-card" style="text-align:center;">
+      <h3>Empowering Humanity with Intelligent Productivity</h3>
+      <p>Building the world's most advanced autonomous AI browsing platform.</p>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
 
-<div class="feature-card" style="text-align:center;">
+# =========================================================
+# PRICING / PRODUCT ROADMAP
+# =========================================================
 
-<h3>
-Empowering Humanity with Intelligent Productivity
-</h3>
+st.markdown('<div id="pricing"></div>', unsafe_allow_html=True)
+st.markdown("## 💎 Product Roadmap")
 
-<p>
-Building the world's most advanced autonomous AI browsing platform.
-</p>
-
-</div>
-""", unsafe_allow_html=True)
+roadmap_cols = st.columns(3)
+roadmap = [
+    ("Starter", "Chat, search, memory vault, and smart browsing."),
+    ("Pro", "Agent workflows, automation, tab summaries, and live plans."),
+    ("Studio", "Team workspaces, advanced orchestration, and custom connectors."),
+]
+for col, (title, desc) in zip(roadmap_cols, roadmap):
+    with col:
+        st.markdown(f"""
+        <div class="feature-card">
+            <h3>{title}</h3>
+            <p>{desc}</p>
+        </div>
+        """, unsafe_allow_html=True)
 
 # =========================================================
 # FOOTER
@@ -1376,25 +1533,33 @@ Building the world's most advanced autonomous AI browsing platform.
 st.markdown("""
 <div class="footer">
 
-<h2 style="color:white;">
-🚀 Fellou AI Browser
-</h2>
+  <h2 style="color:white;">
+    🚀 Ghildiyal AI Browser
+  </h2>
 
-<p>
-AI-native autonomous browsing platform
-</p>
+  <p>
+    AI-native autonomous browsing platform
+  </p>
 
-<br>
+  <br>
 
-<p>
-Features • Research • Docs • API • Contact • Github
-</p>
+  <p>
+    Features • Research • Docs • API • Contact • Github
+  </p>
 
-<br>
+  <br>
 
-<p>
-© 2026 Fellou AI. All rights reserved.
-</p>
+  <p>
+    © 2026 Ghildiyal AI. All rights reserved.
+  </p>
+
+  <p style="
+    margin-top:10px;
+    font-size:14px;
+    color:#60a5fa;
+  ">
+    Made by Adhyayan Ghildiyal
+  </p>
 
 </div>
 """, unsafe_allow_html=True)
