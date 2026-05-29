@@ -1230,8 +1230,6 @@ with chat_col1:
 # =========================================================
 # SEARCH ENGINE
 # =========================================================
-with col2:
-
     st.markdown("## 🔎 Search the Web")
 
     search_term = st.text_input(
