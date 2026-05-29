@@ -140,187 +140,67 @@ def safe_llm_answer(prompt: str) -> str:
         f"Prompt received: {prompt}"
     )
 
-# =========================================================
-# WEB SEARCH FUNCTION
-# =========================================================
-
-from urllib.parse import quote_plus
-
 def web_search(query: str):
-
-    from urllib.parse import quote_plus
-    import re
-    import ast
-    import operator as op
+    serper_key = os.getenv("SERPER_API_KEY", "").strip()
+    tavily_key = os.getenv("TAVILY_API_KEY", "").strip()
 
     results = []
 
-    # -----------------------------
-    # SIMPLE MATH SUPPORT
-    # -----------------------------
-
-    allowed_ops = {
-        ast.Add: op.add,
-        ast.Sub: op.sub,
-        ast.Mult: op.mul,
-        ast.Div: op.truediv,
-        ast.Pow: op.pow,
-        ast.USub: op.neg,
-        ast.UAdd: op.pos,
-        ast.Mod: op.mod,
-    }
-
-    def safe_math_eval(expr: str):
-
-        expr = expr.strip()
-        expr = expr.replace("×", "*")
-        expr = expr.replace("÷", "/")
-
-        if not re.fullmatch(r"[0-9\.\+\-\*\/\%\(\)\s\^]+", expr):
-            return None
-
-        expr = expr.replace("^", "**")
-
-        def _eval(node):
-
-            if isinstance(node, ast.Expression):
-                return _eval(node.body)
-
-            if isinstance(node, ast.Constant):
-                return node.value
-
-            if isinstance(node, ast.Num):
-                return node.n
-
-            if isinstance(node, ast.BinOp):
-
-                if type(node.op) not in allowed_ops:
-                    raise ValueError("Invalid operator")
-
-                return allowed_ops[type(node.op)](
-                    _eval(node.left),
-                    _eval(node.right)
-                )
-
-            if isinstance(node, ast.UnaryOp):
-
-                if type(node.op) not in allowed_ops:
-                    raise ValueError("Invalid unary")
-
-                return allowed_ops[type(node.op)](
-                    _eval(node.operand)
-                )
-
-            raise ValueError("Unsafe")
-
+    if requests and tavily_key:
         try:
-
-            tree = ast.parse(expr, mode="eval")
-
-            result = _eval(tree)
-
-            if isinstance(result, float) and result.is_integer():
-                result = int(result)
-
-            return str(result)
-
-        except:
-            return None
-
-    # -----------------------------
-    # CHECK MATH
-    # -----------------------------
-
-    math_result = safe_math_eval(query)
-
-    if math_result is not None:
-
-        return [{
-            "title": f"Answer: {math_result}",
-            "link": "",
-            "snippet": f"{query} = {math_result}",
-            "source": "Calculator",
-        }]
-
-    # -----------------------------
-    # REAL SEARCH
-    # -----------------------------
-
-    if requests and BeautifulSoup:
-
-        try:
-
-            url = f"https://html.duckduckgo.com/html/?q={quote_plus(query)}"
-
-            headers = {
-                "User-Agent": (
-                    "Mozilla/5.0 "
-                    "(Windows NT 10.0; Win64; x64) "
-                    "AppleWebKit/537.36 "
-                    "(KHTML, like Gecko) "
-                    "Chrome/120 Safari/537.36"
-                )
-            }
-
-            r = requests.get(
-                url,
-                headers=headers,
-                timeout=15
+            r = requests.post(
+                "https://api.tavily.com/search",
+                json={"api_key": tavily_key, "query": query, "max_results": 5},
+                timeout=15,
             )
-
-            soup = BeautifulSoup(r.text, "html.parser")
-
-            cards = soup.select(".result")
-
-            for card in cards[:5]:
-
-                title_tag = card.select_one(".result__title a")
-                snippet_tag = card.select_one(".result__snippet")
-
-                title = (
-                    title_tag.get_text(" ", strip=True)
-                    if title_tag else "Untitled"
-                )
-
-                link = (
-                    title_tag.get("href", "")
-                    if title_tag else ""
-                )
-
-                snippet = (
-                    snippet_tag.get_text(" ", strip=True)
-                    if snippet_tag else ""
-                )
-
+            data = r.json()
+            for item in data.get("results", []):
                 results.append({
-                    "title": title,
-                    "link": link,
-                    "snippet": snippet,
-                    "source": "DuckDuckGo",
+                    "title": item.get("title", "Untitled"),
+                    "link": item.get("url", ""),
+                    "snippet": item.get("content", ""),
+                    "source": "Tavily",
                 })
-
-            if results:
-                return results
-
         except Exception as e:
+            results.append({"title": "Search error", "link": "", "snippet": str(e), "source": "Tavily"})
 
-            return [{
-                "title": "Search Error",
-                "link": "",
-                "snippet": str(e),
-                "source": "DuckDuckGo",
-            }]
+    elif requests and serper_key:
+        try:
+            r = requests.post(
+                "https://google.serper.dev/search",
+                headers={"X-API-KEY": serper_key, "Content-Type": "application/json"},
+                json={"q": query},
+                timeout=15,
+            )
+            data = r.json()
+            for item in data.get("organic", [])[:5]:
+                results.append({
+                    "title": item.get("title", "Untitled"),
+                    "link": item.get("link", ""),
+                    "snippet": item.get("snippet", ""),
+                    "source": "Serper",
+                })
+        except Exception as e:
+            results.append({"title": "Search error", "link": "", "snippet": str(e), "source": "Serper"})
 
-    # -----------------------------
-    # FALLBACK
-    # -----------------------------
+    if not results:
+        results = [
+            {
+                "title": "Demo search result 1",
+                "link": "https://example.com",
+                "snippet": f"Connect SERPER_API_KEY or TAVILY_API_KEY to search the web for: {query}",
+                "source": "Demo",
+            },
+            {
+                "title": "Demo search result 2",
+                "link": "https://example.com",
+                "snippet": "This app supports real search APIs, browser automation, and AI summaries.",
+                "source": "Demo",
+            },
+        ]
+    return results
 
-    return [{
-        "title": f"Search results for '{query}'",
-        "link": "https://duckduckgo.com",
-        "snippet": "Live search unavailable.",
-        "source": "Fallback",
-    }]
+async def fetch_url_info_async(url: str):
     if not PLAYWRIGHT_AVAILABLE:
         return {"title": "Playwright unavailable", "content": "", "error": "Install playwright"}
     try:
