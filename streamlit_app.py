@@ -1226,11 +1226,11 @@ with chat_col1:
         else:
             st.markdown(f"**AI:** {msg['content']}")
 
-with chat_col2:
+
     # =========================================================
 # SEARCH ENGINE
 # =========================================================
-
+with col2:
 st.markdown("## 🔎 Search the Web")
 
 search_term = st.text_input(
