@@ -228,10 +228,22 @@ def web_search(query: str):
 
             for item in data.get("results", []):
 
-                link = item.get("url", "")
+               link = item.get("url", "")
 
-                if link.startswith("//"):
-                    link = "https:" + link
+# FIX DUCKDUCKGO REDIRECT LINKS
+if link.startswith("//"):
+    link = "https:" + link
+
+if "uddg=" in link:
+
+    from urllib.parse import urlparse, parse_qs, unquote
+
+    parsed = urlparse(link)
+
+    qs = parse_qs(parsed.query)
+
+    if "uddg" in qs:
+        link = unquote(qs["uddg"][0])
 
                 results.append({
                     "title": item.get("title", "No Title"),
