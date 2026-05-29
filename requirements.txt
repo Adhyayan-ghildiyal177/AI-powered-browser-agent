@@ -8,3 +8,10 @@ asyncio
 textwrap
 datetime 
 Path
+streamlit
+requests
+beautifulsoup4
+openai
+playwright
+chromadb
+
