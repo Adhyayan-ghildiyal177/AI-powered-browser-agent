@@ -141,64 +141,170 @@ def safe_llm_answer(prompt: str) -> str:
     )
 
 def web_search(query: str):
-    serper_key = os.getenv("SERPER_API_KEY", "").strip()
-    tavily_key = os.getenv("TAVILY_API_KEY", "").strip()
+    """
+    Search for query using Tavily or Serper APIs if keys are set,
+    else perform DuckDuckGo HTML search (no API key required).
+    Returns a list of dicts with keys: title, link, snippet, source.
+    """
+    import os
+    try:
+        import requests
+    except ImportError:
+        requests = None
+    try:
+        from bs4 import BeautifulSoup
+    except ImportError:
+        BeautifulSoup = None
+
+    import re
+    import ast
+    import operator as op
+    from urllib.parse import quote_plus
 
     results = []
 
-    if requests and tavily_key:
+    # 1) Simple math check (safe evaluation)
+    math_expr = query.strip()
+    math_expr = math_expr.replace("×", "*").replace("÷", "/")
+    if re.fullmatch(r"[0-9\.\+\-\*\/\%\(\)\s\^]+", math_expr):
+        math_expr = math_expr.replace("^", "**")
+        try:
+            def _eval(node):
+                if isinstance(node, ast.Expression):
+                    return _eval(node.body)
+                if isinstance(node, ast.Constant):
+                    return node.value
+                if isinstance(node, ast.Num):  # Python <3.8 compatibility
+                    return node.n
+                if isinstance(node, ast.BinOp):
+                    if type(node.op) not in {ast.Add, ast.Sub, ast.Mult, ast.Div, ast.Pow, ast.Mod}:
+                        raise ValueError("Invalid operator")
+                    left = _eval(node.left)
+                    right = _eval(node.right)
+                    return {
+                        ast.Add: op.add, ast.Sub: op.sub,
+                        ast.Mult: op.mul, ast.Div: op.truediv,
+                        ast.Pow: op.pow, ast.Mod: op.mod
+                    }[type(node.op)](left, right)
+                if isinstance(node, ast.UnaryOp):
+                    if type(node.op) not in {ast.UAdd, ast.USub}:
+                        raise ValueError("Invalid unary")
+                    operand = _eval(node.operand)
+                    return {ast.UAdd: op.pos, ast.USub: op.neg}[type(node.op)](operand)
+                raise ValueError("Unsafe expression")
+            node = ast.parse(math_expr, mode='eval')
+            result = _eval(node)
+            if isinstance(result, float) and result.is_integer():
+                result = int(result)
+            return [{
+                "title": f"Answer: {result}",
+                "link": "",
+                "snippet": f"{query} = {result}",
+                "source": "Calculator",
+            }]
+        except Exception:
+            pass
+
+    # 2) Web search via Tavily or Serper if API keys are set
+    serper_key = os.getenv("SERPER_API_KEY", "").strip()
+    tavily_key = os.getenv("TAVILY_API_KEY", "").strip()
+
+    # Tavily Search (if key provided)
+    if requests is not None and tavily_key:
         try:
             r = requests.post(
                 "https://api.tavily.com/search",
                 json={"api_key": tavily_key, "query": query, "max_results": 5},
-                timeout=15,
+                timeout=15
             )
             data = r.json()
             for item in data.get("results", []):
                 results.append({
-                    "title": item.get("title", "Untitled"),
+                    "title": item.get("title", "No Title"),
                     "link": item.get("url", ""),
                     "snippet": item.get("content", ""),
                     "source": "Tavily",
                 })
+            if results:
+                return results
         except Exception as e:
-            results.append({"title": "Search error", "link": "", "snippet": str(e), "source": "Tavily"})
+            results.append({
+                "title": "Search error",
+                "link": "",
+                "snippet": str(e),
+                "source": "Tavily",
+            })
+            return results
 
-    elif requests and serper_key:
+    # Serper Search (if Tavily not used and key provided)
+    if requests is not None and serper_key:
         try:
             r = requests.post(
                 "https://google.serper.dev/search",
                 headers={"X-API-KEY": serper_key, "Content-Type": "application/json"},
                 json={"q": query},
-                timeout=15,
+                timeout=15
             )
             data = r.json()
             for item in data.get("organic", [])[:5]:
                 results.append({
-                    "title": item.get("title", "Untitled"),
+                    "title": item.get("title", "No Title"),
                     "link": item.get("link", ""),
                     "snippet": item.get("snippet", ""),
                     "source": "Serper",
                 })
+            if results:
+                return results
         except Exception as e:
-            results.append({"title": "Search error", "link": "", "snippet": str(e), "source": "Serper"})
+            results.append({
+                "title": "Search error",
+                "link": "",
+                "snippet": str(e),
+                "source": "Serper",
+            })
+            return results
 
-    if not results:
-        results = [
-            {
-                "title": "Demo search result 1",
-                "link": "https://example.com",
-                "snippet": f"Connect SERPER_API_KEY or TAVILY_API_KEY to search the web for: {query}",
-                "source": "Demo",
-            },
-            {
-                "title": "Demo search result 2",
-                "link": "https://example.com",
-                "snippet": "This app supports real search APIs, browser automation, and AI summaries.",
-                "source": "Demo",
-            },
-        ]
-    return results
+    # 3) DuckDuckGo HTML search (no API key needed)
+    if requests is not None and BeautifulSoup is not None:
+        try:
+            r = requests.get(
+                f"https://html.duckduckgo.com/html/?q={quote_plus(query)}",
+                headers={"User-Agent": "Mozilla/5.0"},
+                timeout=15
+            )
+            soup = BeautifulSoup(r.text, "html.parser")
+            cards = soup.select(".result")
+            for card in cards[:5]:
+                title_tag = card.select_one("a.result__a")
+                snippet_tag = card.select_one("a.result__snippet")
+                title = title_tag.get_text(strip=True) if title_tag else "No Title"
+                link = title_tag.get("href", "") if title_tag else ""
+                snippet = snippet_tag.get_text(" ", strip=True) if snippet_tag else ""
+                if title or snippet:
+                    results.append({
+                        "title": title,
+                        "link": link,
+                        "snippet": snippet,
+                        "source": "DuckDuckGo",
+                    })
+            if results:
+                return results
+        except Exception as e:
+            results.append({
+                "title": "Search error",
+                "link": "",
+                "snippet": str(e),
+                "source": "DuckDuckGo",
+            })
+            return results
+
+    # Fallback if all else fails
+    return [{
+        "title": f"Search results for '{query}'",
+        "link": "https://duckduckgo.com",
+        "snippet": "No live search available (requests/bs4 missing or an error occurred).",
+        "source": "Fallback",
+    }]
 
 async def fetch_url_info_async(url: str):
     if not PLAYWRIGHT_AVAILABLE:
