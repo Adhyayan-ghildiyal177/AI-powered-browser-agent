@@ -140,88 +140,20 @@ def safe_llm_answer(prompt: str) -> str:
         f"Prompt received: {prompt}"
     )
 
-# =========================================================
-# WEB SEARCH FUNCTION
-# =========================================================
-
-import re
-import ast
-import operator as op
-
-_allowed_ops = {
-    ast.Add: op.add,
-    ast.Sub: op.sub,
-    ast.Mult: op.mul,
-    ast.Div: op.truediv,
-    ast.Pow: op.pow,
-    ast.USub: op.neg,
-    ast.UAdd: op.pos,
-    ast.Mod: op.mod,
-}
-
-def safe_math_eval(expr: str):
-    """
-    Safely evaluate simple math like 2+3, 10/2, 5*7, (2+3)*4.
-    Returns a string result or None if it is not a math expression.
-    """
-    expr = expr.strip().replace("×", "*").replace("÷", "/")
-    if not re.fullmatch(r"[0-9\.\+\-\*\/\%\(\)\s\^]+", expr):
-        return None
-
-    expr = expr.replace("^", "**")
-
-    def _eval(node):
-        if isinstance(node, ast.Expression):
-            return _eval(node.body)
-        if isinstance(node, ast.Constant) and isinstance(node.value, (int, float)):
-            return node.value
-        if isinstance(node, ast.Num):  # older Python compatibility
-            return node.n
-        if isinstance(node, ast.BinOp) and type(node.op) in _allowed_ops:
-            return _allowed_ops[type(node.op)](_eval(node.left), _eval(node.right))
-        if isinstance(node, ast.UnaryOp) and type(node.op) in _allowed_ops:
-            return _allowed_ops[type(node.op)](_eval(node.operand))
-        raise ValueError("Unsafe expression")
-
-    try:
-        tree = ast.parse(expr, mode="eval")
-        result = _eval(tree)
-        if isinstance(result, float) and result.is_integer():
-            result = int(result)
-        return str(result)
-    except Exception:
-        return None
-
 def web_search(query: str):
     serper_key = os.getenv("SERPER_API_KEY", "").strip()
     tavily_key = os.getenv("TAVILY_API_KEY", "").strip()
 
-    # 1) If it is a math expression, return the answer directly.
-    math_result = safe_math_eval(query)
-    if math_result is not None:
-        return [{
-            "title": f"Answer: {math_result}",
-            "link": "",
-            "snippet": f"The expression {query} = {math_result}",
-            "source": "Calculator",
-        }]
-
     results = []
 
-    # 2) Tavily web search
     if requests and tavily_key:
         try:
             r = requests.post(
                 "https://api.tavily.com/search",
-                json={
-                    "api_key": tavily_key,
-                    "query": query,
-                    "max_results": 5
-                },
+                json={"api_key": tavily_key, "query": query, "max_results": 5},
                 timeout=15,
             )
             data = r.json()
-
             for item in data.get("results", []):
                 results.append({
                     "title": item.get("title", "Untitled"),
@@ -230,27 +162,17 @@ def web_search(query: str):
                     "source": "Tavily",
                 })
         except Exception as e:
-            results.append({
-                "title": "Search error",
-                "link": "",
-                "snippet": str(e),
-                "source": "Tavily",
-            })
+            results.append({"title": "Search error", "link": "", "snippet": str(e), "source": "Tavily"})
 
-    # 3) Serper web search
     elif requests and serper_key:
         try:
             r = requests.post(
                 "https://google.serper.dev/search",
-                headers={
-                    "X-API-KEY": serper_key,
-                    "Content-Type": "application/json"
-                },
+                headers={"X-API-KEY": serper_key, "Content-Type": "application/json"},
                 json={"q": query},
                 timeout=15,
             )
             data = r.json()
-
             for item in data.get("organic", [])[:5]:
                 results.append({
                     "title": item.get("title", "Untitled"),
@@ -259,54 +181,25 @@ def web_search(query: str):
                     "source": "Serper",
                 })
         except Exception as e:
-            results.append({
-                "title": "Search error",
-                "link": "",
-                "snippet": str(e),
-                "source": "Serper",
-            })
+            results.append({"title": "Search error", "link": "", "snippet": str(e), "source": "Serper"})
 
-    # 4) No API key available
-    else:
-        results = [{
-            "title": f"Search results for '{query}'",
-            "link": "",
-            "snippet": "Add SERPER_API_KEY or TAVILY_API_KEY in Streamlit secrets or environment variables to get live web results.",
-            "source": "No API key",
-        }]
-
-    return results
-            for item in data.get("organic", [])[:5]:
-
-                results.append({
-                    "title": item.get("title", "Untitled"),
-                    "link": item.get("link", ""),
-                    "snippet": item.get("snippet", ""),
-                    "source": "Serper",
-                })
-
-        except Exception as e:
-
-            results.append({
-                "title": "Search error",
-                "link": "",
-                "snippet": str(e),
-                "source": "Serper",
-            })
-
-    # DEMO FALLBACK
-    else:
-
+    if not results:
         results = [
             {
-                "title": f"Search results for '{query}'",
-                "link": "https://duckduckgo.com",
-                "snippet": "Connect SERPER_API_KEY or TAVILY_API_KEY for real Google-like search results.",
+                "title": "Demo search result 1",
+                "link": "https://example.com",
+                "snippet": f"Connect SERPER_API_KEY or TAVILY_API_KEY to search the web for: {query}",
                 "source": "Demo",
-            }
+            },
+            {
+                "title": "Demo search result 2",
+                "link": "https://example.com",
+                "snippet": "This app supports real search APIs, browser automation, and AI summaries.",
+                "source": "Demo",
+            },
         ]
-
     return results
+
 async def fetch_url_info_async(url: str):
     if not PLAYWRIGHT_AVAILABLE:
         return {"title": "Playwright unavailable", "content": "", "error": "Install playwright"}
@@ -1005,7 +898,7 @@ with st.sidebar:
 st.markdown("""
 <div class="navbar">
   <div class="nav-flex">
-    <div class="logo">🚀Ghildiyal AI</div>
+    <div class="logo">🚀 Ghildiyal AI</div>
     <div class="nav-links">
       <a href="#launch">Launch</a>
       <a href="#demo">Demo</a>
@@ -1197,86 +1090,28 @@ with launch_col2:
 
 st.markdown("---")
 chat_col1, chat_col2 = st.columns([1.05, 1])
-# =========================================================
-# SEARCH ENGINE
-# =========================================================
 
-st.markdown("## 🔎 Search the Web")
-
-search_term = st.text_input(
-    "Search something",
-    value=st.session_state.search_query,
-    placeholder="Search anything like Google...",
-)
-
-if st.button("Search Web", use_container_width=True):
-
-    st.session_state.search_query = search_term.strip()
-
-    st.session_state.task_status = "Search completed."
-
-    add_log(f"Search run: {search_term}")
-
-# SHOW RESULTS
-if st.session_state.search_query.strip():
-
-    results = web_search(st.session_state.search_query.strip())
-
-    st.markdown("### Search Results")
-
-    for result in results:
-
-        st.markdown(
-            f"""
-            <div class="sidebar-card">
-
-                <div class="small-kicker">
-                    {result['source']}
-                </div>
-
-                <div style="
-                    font-size:22px;
-                    font-weight:800;
-                    margin-top:10px;
-                ">
-
-                    <a href="{result['link']}"
-                       target="_blank"
-                       style="
-                         color:#93c5fd;
-                         text-decoration:none;
-                       ">
-
-                       {result['title']}
-
-                    </a>
-
-                </div>
-
-                <div style="
-                    color:#cbd5e1;
-                    margin-top:10px;
-                    line-height:1.8;
-                ">
-
-                    {result['snippet']}
-
-                </div>
-
-                <div style="
-                    margin-top:12px;
-                    color:#60a5fa;
-                    font-size:14px;
-                ">
-
-                    {result['link']}
-
-                </div>
-
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
+with chat_col1:
+    st.markdown("## 💬 AI Browser Chat")
+    st.caption("Ask for summaries, plans, research, or browser steps.")
+    chat_prompt = st.text_area(
+        "Message",
+        placeholder="Summarize this site, compare two products, or plan a workflow...",
+        height=120,
+    )
+    c1, c2 = st.columns([0.7, 0.3])
+    with c1:
+        if st.button("Send to AI", use_container_width=True):
+            if chat_prompt.strip():
+                st.session_state.chat_history.append({"role": "user", "content": chat_prompt.strip()})
+                reply = safe_llm_answer(chat_prompt.strip())
+                st.session_state.chat_history.append({"role": "assistant", "content": reply})
+                add_log("AI chat response generated.")
+    with c2:
+        if st.button("Save msg", use_container_width=True):
+            if chat_prompt.strip():
+                add_memory(chat_prompt.strip())
+                st.success("Saved.")
 
     st.markdown("### Conversation")
     for msg in st.session_state.chat_history[-8:]:
@@ -1641,7 +1476,7 @@ st.markdown("## ❓ Frequently Asked Questions")
 
 faq = {
     "Can AI automate apps and websites?":
-        "Yes.Ghildiyal AI can automate workflows across websites and desktop apps.",
+        "Yes. Ghildiyal AI can automate workflows across websites and desktop apps.",
     "Can I monitor AI actions in real-time?":
         "Yes. Every AI step is visible and controllable.",
     "Does it support deep research?":
@@ -1697,34 +1532,17 @@ for col, (title, desc) in zip(roadmap_cols, roadmap):
 
 st.markdown("""
 <div class="footer">
-
-  <h2 style="color:white;">
-    🚀 Ghildiyal AI Browser
-  </h2>
-
-  <p>
-    AI-native autonomous browsing platform
-  </p>
-
+  <h2 style="color:white;">🚀 Ghildiyal AI Browser</h2>
+  <p>AI-native autonomous browsing platform</p>
   <br>
-
-  <p>
-    Features • Research • Docs • API • Contact • Github
-  </p>
-
+  <p>Features • Research • Docs • API • Contact • Github</p>
   <br>
+ <p>© 2026 Ghildiyal AI. All rights reserved.</p>
 
-  <p>
-    © 2026 Ghildiyal AI. All rights reserved.
-  </p>
-
-  <p style="
-    margin-top:10px;
-    font-size:14px;
-    color:#60a5fa;
-  ">
-    Made by Adhyayan Ghildiyal
-  </p>
-
-</div>
-""", unsafe_allow_html=True)
+<p style="
+margin-top:10px;
+font-size:14px;
+color:#60a5fa;
+">
+Made by Adhyayan Ghildiyal
+</p>
