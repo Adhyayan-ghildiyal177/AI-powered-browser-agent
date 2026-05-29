@@ -1227,17 +1227,18 @@ with chat_col1:
             st.markdown(f"**AI:** {msg['content']}")
 
 
-    # =========================================================
+# =========================================================
 # SEARCH ENGINE
 # =========================================================
 with col2:
-st.markdown("## 🔎 Search the Web")
 
-search_term = st.text_input(
-    "Search something",
-    value=st.session_state.get("search_query", ""),
-    placeholder="Search anything like Google..."
-)
+    st.markdown("## 🔎 Search the Web")
+
+    search_term = st.text_input(
+        "Search anything",
+        value="",
+        placeholder="Search like Google..."
+    )
 
 if st.button("Search Web", use_container_width=True):
     st.session_state.search_query = search_term.strip()
