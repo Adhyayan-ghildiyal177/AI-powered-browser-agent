@@ -259,11 +259,13 @@ def web_search(query: str):
         "snippet": item.get("content", ""),
         "source": "Tavily",
     })
-            if results:
+                      if results:
                 return results
+
         except Exception as e:
+
             results.append({
-                "title": "Search error",
+                "title": "Search Error",
                 "link": "",
                 "snippet": str(e),
                 "source": "Tavily",
