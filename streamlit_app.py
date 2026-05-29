@@ -253,7 +253,9 @@ def web_search(query: str):
         "link": "https://duckduckgo.com",
         "snippet": "Requests or BeautifulSoup is missing, so live search could not run.",
         "source": "Demo",
-    }]fetch_url_info_async(url: str):
+   ]
+
+async def fetch_url_info_async(url: str):
     if not PLAYWRIGHT_AVAILABLE:
         return {"title": "Playwright unavailable", "content": "", "error": "Install playwright"}
     try:
