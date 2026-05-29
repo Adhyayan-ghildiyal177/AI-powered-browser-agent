@@ -15,7 +15,7 @@ import streamlit as st
 # =========================================================
 
 st.set_page_config(
-    page_title="Ghildiyal AI Browser",
+    page_title="Fellou AI Browser",
     page_icon="🚀",
     layout="wide",
     initial_sidebar_state="collapsed",
@@ -259,40 +259,31 @@ def browser_command(command: str):
     if any(word in command for word in ["memory", "remember"]):
         return "Memory mode activated. Notes will be stored in the personal memory vault."
     return "Command received. The AI browser will interpret it in the workflow engine."
-    # 3) Serper web search
-    elif requests and serper_key:
 
-        try:
-            r = requests.post(
-                "https://google.serper.dev/search",
-                headers={
-                    "X-API-KEY": serper_key,
-                    "Content-Type": "application/json"
-                },
-                json={"q": query},
-                timeout=15,
-            )
+def fake_status_steps():
+    return [
+        "Initializing AI agents...",
+        "Mapping browser context...",
+        "Scanning tabs and sources...",
+        "Analyzing page structure...",
+        "Synthesizing insights...",
+        "Preparing action plan...",
+        "Task completed successfully.",
+    ]
 
-                data = r.json()
+# =========================================================
+# STYLING
+# =========================================================
 
-        for item in data.get("organic", [])[:5]:
+st.markdown("""
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700;800;900&display=swap');
 
-            results.append({
-                "title": item.get("title", "Untitled"),
-                "link": item.get("link", ""),
-                "snippet": item.get("snippet", ""),
-                "source": "Serper",
-            })
-        except Exception as e:
+* {
+    font-family: 'Inter', sans-serif;
+}
 
-            results.append({
-                "title": "Search error",
-                "link": "",
-                "snippet": str(e),
-                "source": "Serper",
-            })
-
-    # 4) No API key available
+html {
     scroll-behavior: smooth;
 }
 
@@ -868,7 +859,7 @@ st.markdown("""
 # =========================================================
 
 with st.sidebar:
-    st.markdown("## 🚀 Ghildiyal AI Command Center")
+    st.markdown("## 🚀 Fellou AI Command Center")
     st.caption("Your browser companion, research engine, and automation console.")
     st.markdown("### Quick Modes")
     mode = st.radio(
@@ -907,7 +898,7 @@ with st.sidebar:
 st.markdown("""
 <div class="navbar">
   <div class="nav-flex">
-    <div class="logo">🚀Ghildiyal AI</div>
+    <div class="logo">🚀 Fellou AI</div>
     <div class="nav-links">
       <a href="#launch">Launch</a>
       <a href="#demo">Demo</a>
@@ -1034,7 +1025,7 @@ with launch_col1:
         unsafe_allow_html=True,
     )
     st.markdown("### Start Session")
-    session_name = st.text_input("Session name", value="Ghildiyal Session")
+    session_name = st.text_input("Session name", value="Fellou Session")
     start_col1, start_col2, start_col3 = st.columns(3)
     with start_col1:
         if st.button("Browse", use_container_width=True):
@@ -1485,7 +1476,7 @@ st.markdown("## ❓ Frequently Asked Questions")
 
 faq = {
     "Can AI automate apps and websites?":
-        "Yes.Ghildiyal AI can automate workflows across websites and desktop apps.",
+        "Yes. Fellou AI can automate workflows across websites and desktop apps.",
     "Can I monitor AI actions in real-time?":
         "Yes. Every AI step is visible and controllable.",
     "Does it support deep research?":
@@ -1541,34 +1532,11 @@ for col, (title, desc) in zip(roadmap_cols, roadmap):
 
 st.markdown("""
 <div class="footer">
-
-  <h2 style="color:white;">
-    🚀 Ghildiyal AI Browser
-  </h2>
-
-  <p>
-    AI-native autonomous browsing platform
-  </p>
-
+  <h2 style="color:white;">🚀 Fellou AI Browser</h2>
+  <p>AI-native autonomous browsing platform</p>
   <br>
-
-  <p>
-    Features • Research • Docs • API • Contact • Github
-  </p>
-
+  <p>Features • Research • Docs • API • Contact • Github</p>
   <br>
-
-  <p>
-    © 2026 Ghildiyal AI. All rights reserved.
-  </p>
-
-  <p style="
-    margin-top:10px;
-    font-size:14px;
-    color:#60a5fa;
-  ">
-    Made by Adhyayan Ghildiyal
-  </p>
-
+  <p>© 2026 Fellou AI. All rights reserved.</p>
 </div>
 """, unsafe_allow_html=True)
