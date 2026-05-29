@@ -273,17 +273,16 @@ def browser_command(command: str):
                 timeout=15,
             )
 
-            data = r.json()
+                data = r.json()
 
-            for item in data.get("organic", [])[:5]:
+        for item in data.get("organic", [])[:5]:
 
-                results.append({
-                    "title": item.get("title", "Untitled"),
-                    "link": item.get("link", ""),
-                    "snippet": item.get("snippet", ""),
-                    "source": "Serper",
-                })
-
+            results.append({
+                "title": item.get("title", "Untitled"),
+                "link": item.get("link", ""),
+                "snippet": item.get("snippet", ""),
+                "source": "Serper",
+            })
         except Exception as e:
 
             results.append({
