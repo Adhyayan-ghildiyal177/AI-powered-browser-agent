@@ -209,10 +209,11 @@ def web_search(query: str):
     serper_key = os.getenv("SERPER_API_KEY", "").strip()
     tavily_key = os.getenv("TAVILY_API_KEY", "").strip()
 
-      # Tavily Search (if key provided)
+         # Tavily Search (if key provided)
     if requests is not None and tavily_key:
 
         try:
+
             r = requests.post(
                 "https://api.tavily.com/search",
                 json={
@@ -239,28 +240,9 @@ def web_search(query: str):
                     "source": "Tavily",
                 })
 
-        except Exception as e:
-
-            results.append({
-                "title": "Search Error",
-                "link": "",
-                "snippet": str(e),
-                "source": "Tavily",
-            })
-    link = item.get("url", "")
-
-    # FIX LINKS
-    if link.startswith("//"):
-        link = "https:" + link
-
-    results.append({
-        "title": item.get("title", "No Title"),
-        "link": link,
-        "snippet": item.get("content", ""),
-        "source": "Tavily",
-    })
             if results:
                 return results
+
         except Exception as e:
 
             results.append({
@@ -269,9 +251,6 @@ def web_search(query: str):
                 "snippet": str(e),
                 "source": "Tavily",
             })
-            return results
-
-    # Serper Search (if Tavily not used and key provided)
     if requests is not None and serper_key:
         try:
             r = requests.post(
