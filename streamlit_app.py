@@ -140,66 +140,97 @@ def safe_llm_answer(prompt: str) -> str:
         f"Prompt received: {prompt}"
     )
 
+# =========================================================
+# WEB SEARCH FUNCTION
+# =========================================================
+
 def web_search(query: str):
+
     serper_key = os.getenv("SERPER_API_KEY", "").strip()
     tavily_key = os.getenv("TAVILY_API_KEY", "").strip()
 
     results = []
 
+    # TAVILY SEARCH
     if requests and tavily_key:
         try:
             r = requests.post(
                 "https://api.tavily.com/search",
-                json={"api_key": tavily_key, "query": query, "max_results": 5},
+                json={
+                    "api_key": tavily_key,
+                    "query": query,
+                    "max_results": 5
+                },
                 timeout=15,
             )
+
             data = r.json()
+
             for item in data.get("results", []):
+
                 results.append({
                     "title": item.get("title", "Untitled"),
                     "link": item.get("url", ""),
                     "snippet": item.get("content", ""),
                     "source": "Tavily",
                 })
-        except Exception as e:
-            results.append({"title": "Search error", "link": "", "snippet": str(e), "source": "Tavily"})
 
+        except Exception as e:
+
+            results.append({
+                "title": "Search error",
+                "link": "",
+                "snippet": str(e),
+                "source": "Tavily",
+            })
+
+    # SERPER SEARCH
     elif requests and serper_key:
+
         try:
             r = requests.post(
                 "https://google.serper.dev/search",
-                headers={"X-API-KEY": serper_key, "Content-Type": "application/json"},
+                headers={
+                    "X-API-KEY": serper_key,
+                    "Content-Type": "application/json"
+                },
                 json={"q": query},
                 timeout=15,
             )
+
             data = r.json()
+
             for item in data.get("organic", [])[:5]:
+
                 results.append({
                     "title": item.get("title", "Untitled"),
                     "link": item.get("link", ""),
                     "snippet": item.get("snippet", ""),
                     "source": "Serper",
                 })
-        except Exception as e:
-            results.append({"title": "Search error", "link": "", "snippet": str(e), "source": "Serper"})
 
-    if not results:
+        except Exception as e:
+
+            results.append({
+                "title": "Search error",
+                "link": "",
+                "snippet": str(e),
+                "source": "Serper",
+            })
+
+    # DEMO FALLBACK
+    else:
+
         results = [
             {
-                "title": "Demo search result 1",
-                "link": "https://example.com",
-                "snippet": f"Connect SERPER_API_KEY or TAVILY_API_KEY to search the web for: {query}",
+                "title": f"Search results for '{query}'",
+                "link": "https://duckduckgo.com",
+                "snippet": "Connect SERPER_API_KEY or TAVILY_API_KEY for real Google-like search results.",
                 "source": "Demo",
-            },
-            {
-                "title": "Demo search result 2",
-                "link": "https://example.com",
-                "snippet": "This app supports real search APIs, browser automation, and AI summaries.",
-                "source": "Demo",
-            },
+            }
         ]
-    return results
 
+    return results
 async def fetch_url_info_async(url: str):
     if not PLAYWRIGHT_AVAILABLE:
         return {"title": "Playwright unavailable", "content": "", "error": "Install playwright"}
@@ -1090,28 +1121,86 @@ with launch_col2:
 
 st.markdown("---")
 chat_col1, chat_col2 = st.columns([1.05, 1])
+# =========================================================
+# SEARCH ENGINE
+# =========================================================
 
-with chat_col1:
-    st.markdown("## 💬 AI Browser Chat")
-    st.caption("Ask for summaries, plans, research, or browser steps.")
-    chat_prompt = st.text_area(
-        "Message",
-        placeholder="Summarize this site, compare two products, or plan a workflow...",
-        height=120,
-    )
-    c1, c2 = st.columns([0.7, 0.3])
-    with c1:
-        if st.button("Send to AI", use_container_width=True):
-            if chat_prompt.strip():
-                st.session_state.chat_history.append({"role": "user", "content": chat_prompt.strip()})
-                reply = safe_llm_answer(chat_prompt.strip())
-                st.session_state.chat_history.append({"role": "assistant", "content": reply})
-                add_log("AI chat response generated.")
-    with c2:
-        if st.button("Save msg", use_container_width=True):
-            if chat_prompt.strip():
-                add_memory(chat_prompt.strip())
-                st.success("Saved.")
+st.markdown("## 🔎 Search the Web")
+
+search_term = st.text_input(
+    "Search something",
+    value=st.session_state.search_query,
+    placeholder="Search anything like Google...",
+)
+
+if st.button("Search Web", use_container_width=True):
+
+    st.session_state.search_query = search_term.strip()
+
+    st.session_state.task_status = "Search completed."
+
+    add_log(f"Search run: {search_term}")
+
+# SHOW RESULTS
+if st.session_state.search_query.strip():
+
+    results = web_search(st.session_state.search_query.strip())
+
+    st.markdown("### Search Results")
+
+    for result in results:
+
+        st.markdown(
+            f"""
+            <div class="sidebar-card">
+
+                <div class="small-kicker">
+                    {result['source']}
+                </div>
+
+                <div style="
+                    font-size:22px;
+                    font-weight:800;
+                    margin-top:10px;
+                ">
+
+                    <a href="{result['link']}"
+                       target="_blank"
+                       style="
+                         color:#93c5fd;
+                         text-decoration:none;
+                       ">
+
+                       {result['title']}
+
+                    </a>
+
+                </div>
+
+                <div style="
+                    color:#cbd5e1;
+                    margin-top:10px;
+                    line-height:1.8;
+                ">
+
+                    {result['snippet']}
+
+                </div>
+
+                <div style="
+                    margin-top:12px;
+                    color:#60a5fa;
+                    font-size:14px;
+                ">
+
+                    {result['link']}
+
+                </div>
+
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
 
     st.markdown("### Conversation")
     for msg in st.session_state.chat_history[-8:]:
