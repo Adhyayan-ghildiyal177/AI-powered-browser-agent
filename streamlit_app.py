@@ -217,8 +217,21 @@ def web_search(query: str):
                 json={"api_key": tavily_key, "query": query, "max_results": 5},
                 timeout=15
             )
-            data = r.json()
-          for item in data.get("results", []):
+                    data = r.json()
+
+            for item in data.get("results", []):
+
+                link = item.get("url", "")
+
+                if link.startswith("//"):
+                    link = "https:" + link
+
+                results.append({
+                    "title": item.get("title", "No Title"),
+                    "link": link,
+                    "snippet": item.get("content", ""),
+                    "source": "Tavily",
+                })
 
     link = item.get("url", "")
 
