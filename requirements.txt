@@ -8,3 +8,6 @@ asyncio
 textwrap
 datetime 
 Path
+re
+ast
+operator 
