@@ -158,7 +158,7 @@ def web_search(query: str):
     import re
     import ast
     import operator as op
-    from urllib.parse import quote_plus
+    from urllib.parse import quote_plus, urlparse, parse_qs, unquote
 
     results = []
 
@@ -226,21 +226,14 @@ def web_search(query: str):
             data = r.json()
 
             for item in data.get("results", []):
-
                 link = item.get("url", "")
 
-                # FIX DUCKDUCKGO REDIRECT LINKS
                 if link.startswith("//"):
                     link = "https:" + link
 
                 if "uddg=" in link:
-
-                    from urllib.parse import urlparse, parse_qs, unquote
-
                     parsed = urlparse(link)
-
                     qs = parse_qs(parsed.query)
-
                     if "uddg" in qs:
                         link = unquote(qs["uddg"][0])
 
@@ -304,6 +297,15 @@ def web_search(query: str):
                 snippet_tag = card.select_one("a.result__snippet")
                 title = title_tag.get_text(strip=True) if title_tag else "No Title"
                 link = title_tag.get("href", "") if title_tag else ""
+                if link.startswith("//"):
+                    link = "https:" + link
+
+                if "uddg=" in link:
+                    parsed = urlparse(link)
+                    qs = parse_qs(parsed.query)
+                    if "uddg" in qs:
+                        link = unquote(qs["uddg"][0])
+
                 snippet = snippet_tag.get_text(" ", strip=True) if snippet_tag else ""
                 if title or snippet:
                     results.append({
